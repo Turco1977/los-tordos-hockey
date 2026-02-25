@@ -174,6 +174,5 @@ export const TABS = [
   { id: "padron", l: "Padrón", i: "👥", minLv: 3 },
   { id: "lbf", l: "Lista de Buena Fe", i: "📋", minLv: 3 },
   { id: "organigrama", l: "Organigrama", i: "🏗️", minLv: 3 },
-  { id: "staff", l: "Staff", i: "👤", minLv: 1 },
 ] as const;
 export type TabId = typeof TABS[number]["id"];

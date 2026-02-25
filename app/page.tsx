@@ -19,7 +19,6 @@ import PlayerDetail from "@/components/main/PlayerDetail";
 import LBFManager from "@/components/main/LBFManager";
 import LBFSummary from "@/components/main/LBFSummary";
 import Organigrama from "@/components/main/Organigrama";
-import StaffManager from "@/components/main/StaffManager";
 import type { Jugadora } from "@/lib/supabase/types";
 
 export default function Page() {
@@ -36,13 +35,13 @@ export default function Page() {
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" } | null>(null);
 
   const store = useStore();
-  const { user, profile, roles, activeRole, setUser, setProfile, setRoles, setActiveRole, jugadoras, lbfs, staff, fetchJugadoras, fetchLBFs, fetchStaff } = store;
+  const { user, profile, roles, activeRole, setUser, setProfile, setRoles, setActiveRole, jugadoras, lbfs, fetchJugadoras, fetchLBFs } = store;
 
   const userLevel = maxLevel(roles);
 
   const loadData = useCallback(async () => {
-    await Promise.all([fetchJugadoras(), fetchLBFs(), fetchStaff()]);
-  }, [fetchJugadoras, fetchLBFs, fetchStaff]);
+    await Promise.all([fetchJugadoras(), fetchLBFs()]);
+  }, [fetchJugadoras, fetchLBFs]);
 
   // Auth check
   useEffect(() => {
@@ -66,7 +65,6 @@ export default function Page() {
     const ch = sb.channel("hockey-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "jugadoras" }, () => fetchJugadoras())
       .on("postgres_changes", { event: "*", schema: "public", table: "lbf" }, () => fetchLBFs())
-      .on("postgres_changes", { event: "*", schema: "public", table: "hockey_roles" }, () => fetchStaff())
       .subscribe();
     return () => { sb.removeChannel(ch); };
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -209,8 +207,6 @@ export default function Page() {
         );
       case "organigrama":
         return <Organigrama />;
-      case "staff":
-        return <StaffManager staff={staff} onRefresh={fetchStaff} userLevel={userLevel} />;
       default:
         return null;
     }
