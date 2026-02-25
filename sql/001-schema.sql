@@ -66,7 +66,7 @@ create table if not exists jugadoras (
   fecha_nacimiento date not null,
   division_efectiva text, -- auto-calculated by trigger
   division_manual text,   -- manual override
-  rama text not null default 'Competitiva' check (rama in ('Competitiva','No Competitiva')),
+  rama text not null default 'A' check (rama in ('A','B','C','D','E')),
   posicion text,
   email text,
   telefono text,
@@ -194,7 +194,7 @@ create table if not exists lbf (
   id uuid primary key default gen_random_uuid(),
   nombre text not null,
   division text not null,
-  rama text not null default 'Competitiva',
+  rama text not null default 'A',
   estado text not null default 'borrador' check (estado in ('borrador','pendiente','aprobada','rechazada')),
   fecha_partido date,
   rival text,

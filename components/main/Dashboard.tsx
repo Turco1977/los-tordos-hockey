@@ -12,8 +12,8 @@ export default function Dashboard({ jugadoras, lbfs }: { jugadoras: Jugadora[]; 
   const stats = useMemo(() => {
     const activas = jugadoras.filter(j => j.activa);
     const total = activas.length;
-    const comp = activas.filter(j => j.rama === "A").length;
-    const noComp = total - comp;
+    const byRama: Record<string, number> = {};
+    activas.forEach(j => { byRama[j.rama] = (byRama[j.rama] || 0) + 1; });
     const certVig = activas.filter(j => j.cert_medico_estado === "vigente").length;
     const socias = activas.filter(j => j.socia).length;
     const derecho = activas.filter(j => j.derecho_jugadora).length;
@@ -21,7 +21,7 @@ export default function Dashboard({ jugadoras, lbfs }: { jugadoras: Jugadora[]; 
     const maxDiv = Math.max(...byDiv.map(d => d.count), 1);
     const lbfAprobadas = lbfs.filter(l => l.estado === "aprobada").length;
     const lbfPendientes = lbfs.filter(l => l.estado === "pendiente").length;
-    return { total, comp, noComp, certVig, socias, derecho, byDiv, maxDiv, lbfAprobadas, lbfPendientes, pctCert: total ? Math.round(certVig / total * 100) : 0, pctSocia: total ? Math.round(socias / total * 100) : 0, pctDerecho: total ? Math.round(derecho / total * 100) : 0 };
+    return { total, byRama, certVig, socias, derecho, byDiv, maxDiv, lbfAprobadas, lbfPendientes, pctCert: total ? Math.round(certVig / total * 100) : 0, pctSocia: total ? Math.round(socias / total * 100) : 0, pctDerecho: total ? Math.round(derecho / total * 100) : 0 };
   }, [jugadoras, lbfs]);
 
   const kpi = (icon: string, label: string, value: number | string, color: string) => (
@@ -39,10 +39,9 @@ export default function Dashboard({ jugadoras, lbfs }: { jugadoras: Jugadora[]; 
       {/* KPI Cards */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
         {kpi("👥", "Total Activas", stats.total, colors.nv)}
-        {kpi("🏑", "Competitivas", stats.comp, colors.bl)}
-        {kpi("🌟", "No Competitivas", stats.noComp, colors.pr)}
         {kpi("📋", "LBF Aprobadas", stats.lbfAprobadas, colors.gn)}
         {kpi("🟡", "LBF Pendientes", stats.lbfPendientes, colors.yl)}
+        {Object.entries(stats.byRama).map(([rama, count]) => kpi("🏑", `Rama ${rama}`, count, colors.bl))}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 14 }}>
@@ -69,17 +68,25 @@ export default function Dashboard({ jugadoras, lbfs }: { jugadoras: Jugadora[]; 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 24 }}>
             <svg width="120" height="120" viewBox="0 0 120 120">
               {(() => {
-                const total = stats.comp + stats.noComp || 1;
-                const a1 = (stats.comp / total) * 360;
+                const ramaColors = [colors.bl, colors.gn, colors.pr, colors.yl, colors.rd];
+                const entries = Object.entries(stats.byRama);
+                const total = entries.reduce((s, [, c]) => s + c, 0) || 1;
                 const r = 50, cx = 60, cy = 60;
                 const toRad = (d: number) => (d - 90) * Math.PI / 180;
-                const x1 = cx + r * Math.cos(toRad(0)), y1 = cy + r * Math.sin(toRad(0));
-                const x2 = cx + r * Math.cos(toRad(a1)), y2 = cy + r * Math.sin(toRad(a1));
-                const large = a1 > 180 ? 1 : 0;
+                let angle = 0;
                 return (
                   <>
-                    <circle cx={cx} cy={cy} r={r} fill="none" stroke={colors.pr} strokeWidth="20" />
-                    {stats.comp > 0 && <path d={`M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z`} fill={colors.bl} />}
+                    <circle cx={cx} cy={cy} r={r} fill="none" stroke={colors.g2} strokeWidth="20" />
+                    {entries.map(([, count], i) => {
+                      const sweep = (count / total) * 360;
+                      const start = angle;
+                      angle += sweep;
+                      if (count === 0) return null;
+                      const x1 = cx + r * Math.cos(toRad(start)), y1 = cy + r * Math.sin(toRad(start));
+                      const x2 = cx + r * Math.cos(toRad(start + sweep)), y2 = cy + r * Math.sin(toRad(start + sweep));
+                      const large = sweep > 180 ? 1 : 0;
+                      return <path key={i} d={`M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z`} fill={ramaColors[i % ramaColors.length]} />;
+                    })}
                     <circle cx={cx} cy={cy} r="30" fill={cardBg} />
                     <text x={cx} y={cy + 4} textAnchor="middle" fontSize="14" fontWeight="800" fill={colors.nv}>{stats.total}</text>
                   </>
@@ -87,14 +94,15 @@ export default function Dashboard({ jugadoras, lbfs }: { jugadoras: Jugadora[]; 
               })()}
             </svg>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: colors.bl }} />
-                <span style={{ fontSize: 11, color: colors.nv }}>Comp. ({stats.comp})</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: colors.pr }} />
-                <span style={{ fontSize: 11, color: colors.nv }}>No Comp. ({stats.noComp})</span>
-              </div>
+              {Object.entries(stats.byRama).map(([rama, count], i) => {
+                const ramaColors = [colors.bl, colors.gn, colors.pr, colors.yl, colors.rd];
+                return (
+                  <div key={rama} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 2, background: ramaColors[i % ramaColors.length] }} />
+                    <span style={{ fontSize: 11, color: colors.nv }}>Rama {rama} ({count})</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </Card>
