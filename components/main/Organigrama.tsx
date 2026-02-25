@@ -1,41 +1,164 @@
 "use client";
+import { useState } from "react";
 import { useC } from "@/lib/theme-context";
-import { Card, useMobile } from "@/components/ui";
+import { useMobile } from "@/components/ui";
 import { ORGANIGRAMA } from "@/lib/constants";
 
+function OrgNode({ icon, title, sub, color, children, cnt, expanded, onToggle, mob }: any) {
+  return (
+    <div style={{ marginBottom: 6 }}>
+      <div onClick={onToggle} style={{
+        display: "flex", alignItems: "center", gap: 8,
+        padding: mob ? "8px 10px" : "10px 14px",
+        background: "#fff", borderRadius: 10,
+        border: "1px solid #E8ECF1",
+        borderLeft: "4px solid " + color,
+        cursor: "pointer",
+      }}>
+        <span style={{ fontSize: 18 }}>{icon}</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0A1628" }}>{title}</div>
+          {sub && <div style={{ fontSize: 10, color: "#8B95A5" }}>{sub}</div>}
+        </div>
+        {cnt !== undefined && (
+          <span style={{
+            background: "#F7F8FA", borderRadius: 12,
+            padding: "1px 8px", fontSize: 10, fontWeight: 600, color: "#5A6577",
+          }}>{cnt}</span>
+        )}
+        <span style={{
+          fontSize: 12, color: "#8B95A5",
+          transform: expanded ? "rotate(90deg)" : "none",
+          transition: "transform .2s",
+        }}>▶</span>
+      </div>
+      {expanded && (
+        <div style={{
+          marginLeft: mob ? 12 : 24, marginTop: 4,
+          borderLeft: "2px solid " + color + "22",
+          paddingLeft: mob ? 8 : 14,
+        }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MemberCard({ m, color }: { m: any; color: string }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 6,
+      padding: "5px 10px", background: "#FAFAFA",
+      borderRadius: 7, border: "1px solid #E8ECF1", marginBottom: 3,
+    }}>
+      <span style={{ fontSize: 10 }}>👤</span>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color, textTransform: "uppercase" as const }}>{m.role}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#0A1628" }}>{m.nombre}</div>
+      </div>
+      {m.divisiones && m.divisiones.length > 0 && (
+        <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+          {m.divisiones.map((d: string) => (
+            <span key={d} style={{
+              fontSize: 8, padding: "1px 5px", borderRadius: 10,
+              background: color + "15", color, fontWeight: 600,
+            }}>{d}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Organigrama() {
-  const { colors, cardBg } = useC();
+  const { colors } = useC();
   const mob = useMobile();
+  const [ex, setEx] = useState<Record<string, boolean>>({});
+
+  const tog = (k: string) => setEx(p => ({ ...p, [k]: !p[k] }));
+
+  // Group areas hierarchically
+  const dir = ORGANIGRAMA.find(a => a.area === "Dirección");
+  const entRamas = ORGANIGRAMA.filter(a => a.area.startsWith("Entrenadores Rama"));
+  const pfAreas = ORGANIGRAMA.filter(a => a.area.startsWith("PF Rama") || a.area === "Preparación Física");
+  const pfCoord = pfAreas.find(a => a.area === "Preparación Física");
+  const pfRamas = pfAreas.filter(a => a.area.startsWith("PF Rama"));
+  const desarrollo = ORGANIGRAMA.find(a => a.area === "Desarrollo");
+  const monitoras = ORGANIGRAMA.find(a => a.area === "Monitoras");
+  const gym = ORGANIGRAMA.find(a => a.area === "Gym");
 
   return (
-    <div>
-      <h2 style={{ margin: "0 0 16px", fontSize: mob ? 16 : 20, fontWeight: 800, color: colors.nv }}>🏗️ Organigrama Hockey</h2>
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {ORGANIGRAMA.map((area, i) => (
-          <Card key={i}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <span style={{ fontSize: 20 }}>{area.icon}</span>
-              <span style={{ fontSize: 14, fontWeight: 800, color: area.color }}>{area.area}</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
+    <div style={{ maxWidth: mob ? undefined : 720 }}>
+      <h2 style={{ margin: "0 0 4px", fontSize: mob ? 16 : 19, color: colors.nv, fontWeight: 800 }}>Organigrama</h2>
+      <p style={{ color: colors.g4, fontSize: 12, margin: "0 0 12px" }}>Estructura deportiva — Departamento de Hockey</p>
+
+      {/* Director Deportivo */}
+      {dir && (
+        <OrgNode mob={mob} icon="🎯" title="Dirección" sub="Director Deportivo + Directora Hockey" color="#C8102E" cnt={dir.members.length} expanded={ex.dir !== false} onToggle={() => tog("dir")}>
+          {dir.members.map((m, i) => (
+            <MemberCard key={i} m={m} color="#C8102E" />
+          ))}
+        </OrgNode>
+      )}
+
+      {/* Entrenadores */}
+      <OrgNode mob={mob} icon="📋" title="Entrenadores" sub="Por rama y división" color="#3B82F6" cnt={entRamas.reduce((s, a) => s + a.members.length, 0)} expanded={!!ex.ent} onToggle={() => tog("ent")}>
+        {entRamas.map((area, i) => {
+          const ramaKey = "ent_" + i;
+          return (
+            <OrgNode key={i} mob={mob} icon={area.icon} title={area.area} color={area.color} cnt={area.members.length} expanded={!!ex[ramaKey]} onToggle={() => tog(ramaKey)}>
               {area.members.map((m, j) => (
-                <div key={j} style={{ padding: "8px 12px", borderRadius: 8, background: area.color + "10", border: "1px solid " + area.color + "30" }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: colors.nv }}>{m.nombre}</div>
-                  <div style={{ fontSize: 10, color: colors.g5, fontWeight: 600 }}>{m.role}</div>
-                  {m.rama && <span style={{ fontSize: 9, color: area.color, fontWeight: 700, marginRight: 4 }}>Rama {m.rama}</span>}
-                  {m.divisiones && m.divisiones.length > 0 && (
-                    <div style={{ marginTop: 3, display: "flex", gap: 3, flexWrap: "wrap" }}>
-                      {m.divisiones.map(d => (
-                        <span key={d} style={{ fontSize: 9, padding: "1px 6px", borderRadius: 10, background: area.color + "20", color: area.color, fontWeight: 600 }}>{d}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <MemberCard key={j} m={m} color={area.color} />
               ))}
-            </div>
-          </Card>
+            </OrgNode>
+          );
+        })}
+      </OrgNode>
+
+      {/* Preparación Física */}
+      <OrgNode mob={mob} icon="🏋️" title="Preparación Física" sub={pfCoord ? `Coord: ${pfCoord.members[0]?.nombre}` : ""} color="#F97316" cnt={pfRamas.reduce((s, a) => s + a.members.length, 0)} expanded={!!ex.pf} onToggle={() => tog("pf")}>
+        {pfCoord && pfCoord.members.map((m, i) => (
+          <MemberCard key={"c" + i} m={{ ...m, role: "Coordinador PF" }} color="#F97316" />
         ))}
-      </div>
+        {pfRamas.map((area, i) => {
+          const pfKey = "pf_" + i;
+          return (
+            <OrgNode key={i} mob={mob} icon="💪" title={area.area} color="#F97316" cnt={area.members.length} expanded={!!ex[pfKey]} onToggle={() => tog(pfKey)}>
+              {area.members.map((m, j) => (
+                <MemberCard key={j} m={m} color="#F97316" />
+              ))}
+            </OrgNode>
+          );
+        })}
+      </OrgNode>
+
+      {/* Desarrollo */}
+      {desarrollo && (
+        <OrgNode mob={mob} icon="⚡" title="Desarrollo" sub="Motor + Técnico" color="#6366F1" cnt={desarrollo.members.length} expanded={!!ex.des} onToggle={() => tog("des")}>
+          {desarrollo.members.map((m, i) => (
+            <MemberCard key={i} m={m} color="#6366F1" />
+          ))}
+        </OrgNode>
+      )}
+
+      {/* Monitoras */}
+      {monitoras && (
+        <OrgNode mob={mob} icon="👁️" title="Monitoras" color="#14B8A6" cnt={monitoras.members.length} expanded={!!ex.mon} onToggle={() => tog("mon")}>
+          {monitoras.members.map((m, i) => (
+            <MemberCard key={i} m={m} color="#14B8A6" />
+          ))}
+        </OrgNode>
+      )}
+
+      {/* Gym */}
+      {gym && (
+        <OrgNode mob={mob} icon="🏠" title="Gym" color="#78716C" cnt={gym.members.length} expanded={!!ex.gym} onToggle={() => tog("gym")}>
+          {gym.members.map((m, i) => (
+            <MemberCard key={i} m={m} color="#78716C" />
+          ))}
+        </OrgNode>
+      )}
     </div>
   );
 }
