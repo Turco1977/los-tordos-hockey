@@ -12,7 +12,8 @@ export async function POST(req: NextRequest) {
 
     const sb = createAdminClient();
 
-    // Create auth user
+    // Create or find auth user
+    let userId: string;
     const { data: authData, error: authErr } = await sb.auth.admin.createUser({
       email,
       password,
@@ -21,10 +22,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (authErr) {
-      return NextResponse.json({ error: authErr.message }, { status: 400 });
+      // If user already exists, look them up
+      if (authErr.message.includes("already been registered")) {
+        const { data: { users } } = await sb.auth.admin.listUsers();
+        const existing = users.find((u: any) => u.email === email);
+        if (!existing) return NextResponse.json({ error: "User exists but not found" }, { status: 400 });
+        userId = existing.id;
+      } else {
+        return NextResponse.json({ error: authErr.message }, { status: 400 });
+      }
+    } else {
+      userId = authData.user.id;
     }
-
-    const userId = authData.user.id;
 
     // Ensure profile exists
     await sb.from("profiles").upsert({
