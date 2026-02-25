@@ -85,29 +85,69 @@ export default function Page() {
       const text = await file.text();
       const lines = text.split("\n").filter(l => l.trim());
       if (lines.length < 2) { setToast({ msg: "CSV vacío o sin datos", type: "err" }); return; }
-      const headers = lines[0].split(",").map(h => h.replace(/"/g, "").trim().toLowerCase());
-      const rows = lines.slice(1).map(line => {
-        const vals = line.split(",").map(v => v.replace(/"/g, "").trim());
+
+      // Auto-detect separator
+      const sep = lines[0].includes(";") ? ";" : ",";
+      const headers = lines[0].split(sep).map(h => h.replace(/"/g, "").trim().toLowerCase());
+
+      // Detect format: "Apellido Nombre" column = PDR format
+      const isPDR = headers.some(h => h.includes("apellido nombre"));
+
+      const seen = new Set<string>();
+      const rows: any[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const vals = lines[i].split(sep).map(v => v.replace(/"/g, "").trim());
         const obj: any = {};
-        headers.forEach((h, i) => { obj[h] = vals[i] || ""; });
-        return {
-          nombre: obj.nombre || obj.name || "",
-          apellido: obj.apellido || obj.surname || "",
-          dni: obj.dni || "",
-          fecha_nacimiento: obj.fecha_nacimiento || obj["fecha nac"] || obj.nacimiento || "",
+        headers.forEach((h, idx) => { obj[h] = vals[idx] || ""; });
+
+        let nombre = "", apellido = "", dni = "", fecha = "";
+
+        if (isPDR) {
+          // PDR format: "APELLIDO, NOMBRE" in one column
+          dni = obj.dni || obj["dni"] || "";
+          const an = obj["apellido nombre"] || "";
+          const parts = an.split(",").map((s: string) => s.trim());
+          apellido = parts[0] || "";
+          nombre = parts[1] || "";
+          // fecha DD/MM/YYYY -> YYYY-MM-DD
+          const fr = obj["fecha nacimiento"] || "";
+          const fp = fr.split("/");
+          fecha = fp.length === 3 ? `${fp[2]}-${fp[1].padStart(2, "0")}-${fp[0].padStart(2, "0")}` : "";
+        } else {
+          nombre = obj.nombre || obj.name || "";
+          apellido = obj.apellido || obj.surname || "";
+          dni = obj.dni || "";
+          fecha = obj.fecha_nacimiento || obj["fecha nac"] || obj.nacimiento || "";
+        }
+
+        if (!nombre || !apellido || !dni || !fecha || seen.has(dni)) continue;
+        seen.add(dni);
+
+        const lbfVal = (obj.lbf || "").toLowerCase();
+        rows.push({
+          nombre, apellido, dni, fecha_nacimiento: fecha,
           rama: obj.rama || "Competitiva",
           posicion: obj.posicion || null,
           socia: ["si","sí","true","1"].includes((obj.socia || "").toLowerCase()),
-          derecho_jugadora: ["si","sí","true","1"].includes((obj.derecho || obj.derecho_jugadora || "").toLowerCase()),
+          derecho_jugadora: lbfVal === "si" || ["si","sí","true","1"].includes((obj.derecho || obj.derecho_jugadora || "").toLowerCase()),
           cert_medico_estado: obj.cert_medico_estado || "pendiente",
           cert_medico_vencimiento: obj.cert_medico_vencimiento || null,
-          activa: true,
-        };
-      }).filter(r => r.nombre && r.apellido && r.dni && r.fecha_nacimiento);
-      if (rows.length === 0) { setToast({ msg: "No se encontraron filas válidas. Columnas requeridas: nombre, apellido, dni, fecha_nacimiento", type: "err" }); return; }
-      const { error } = await sb.from("jugadoras").insert(rows);
-      if (error) throw error;
-      setToast({ msg: `${rows.length} jugadora(s) cargadas`, type: "ok" });
+          activa: (obj.estado || "").toLowerCase() !== "baja",
+          observaciones: obj.observaciones || null,
+        });
+      }
+
+      if (rows.length === 0) { setToast({ msg: "No se encontraron filas válidas", type: "err" }); return; }
+
+      // Insert in batches of 100
+      let ok = 0;
+      for (let i = 0; i < rows.length; i += 100) {
+        const batch = rows.slice(i, i + 100);
+        const { error } = await sb.from("jugadoras").insert(batch);
+        if (error) throw error;
+        ok += batch.length;
+      }
+      setToast({ msg: `${ok} jugadora(s) cargadas`, type: "ok" });
       await fetchJugadoras();
     } catch (e: any) { setToast({ msg: e.message || "Error en carga masiva", type: "err" }); }
   };
