@@ -26,6 +26,14 @@ export async function POST(req: NextRequest) {
 
     const userId = authData.user.id;
 
+    // Ensure profile exists
+    await sb.from("profiles").upsert({
+      id: userId,
+      email,
+      first_name: first_name || "",
+      last_name: last_name || "",
+    }, { onConflict: "id" });
+
     // Create hockey role
     const { error: roleErr } = await sb.from("hockey_roles").insert({
       user_id: userId,
