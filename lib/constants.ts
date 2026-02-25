@@ -5,22 +5,21 @@ export const TD={nv:"#E2E8F0",rd:"#F87171",g1:"#0F172A",g2:"#1E293B",g3:"#334155
 /* ── Hockey Divisions ── */
 export const DIVISIONES = [
   "Primera",
-  "Reserva",
-  "Sub 21",
-  "Juveniles A",
-  "Juveniles B",
-  "Cadetes A",
-  "Cadetes B",
-  "Menores A",
-  "Menores B",
-  "Pre-mini",
-  "Mini",
-  "Escuelita",
+  "Segunda",
+  "Cuartas",
+  "Quinta",
+  "Sexta",
+  "Séptima",
+  "Octava",
+  "Novena",
+  "Décima",
+  "Pre Décima",
+  "Mamis",
 ] as const;
 export type Division = typeof DIVISIONES[number];
 
 /* ── Hockey Branches (ramas) ── */
-export const RAMAS = ["Competitiva", "No Competitiva"] as const;
+export const RAMAS = ["A", "B", "C", "D", "E"] as const;
 export type Rama = typeof RAMAS[number];
 
 /* ── Hockey Positions ── */
@@ -33,15 +32,111 @@ export const POSICIONES = [
   "Volante",
 ] as const;
 
-/* ── Hockey Roles (4 niveles) ── */
+/* ── Hockey Roles ── */
 export const HOCKEY_ROLES: Record<string,{l:string;i:string;lv:number}> = {
-  director_deportivo: { l: "Director Deportivo", i: "🎯", lv: 1 },
-  directora_hockey:   { l: "Directora Hockey", i: "🏑", lv: 2 },
-  entrenador:         { l: "Entrenador/a", i: "📋", lv: 3 },
-  pf:                 { l: "Preparador/a Físico", i: "🏋️", lv: 3 },
-  monitora:           { l: "Monitora", i: "👁️", lv: 4 },
+  director_deportivo:  { l: "Director Deportivo", i: "🎯", lv: 1 },
+  directora_hockey:    { l: "Directora Hockey", i: "🏑", lv: 2 },
+  coordinador_pf:      { l: "Coordinador PF", i: "💪", lv: 2 },
+  entrenador:          { l: "Entrenador/a", i: "📋", lv: 3 },
+  pf:                  { l: "Preparador/a Físico", i: "🏋️", lv: 3 },
+  desarrollo_motor:    { l: "Desarrollo Motor", i: "🧒", lv: 3 },
+  desarrollo_tecnico:  { l: "Desarrollo Técnico", i: "⚡", lv: 3 },
+  responsable_gym:     { l: "Responsable Gym", i: "🏠", lv: 3 },
+  monitora:            { l: "Monitora", i: "👁️", lv: 4 },
 };
 export const HOCKEY_ROLE_KEYS = Object.keys(HOCKEY_ROLES);
+
+/* ── Organigrama (estructura jerárquica) ── */
+export interface OrgMember { nombre: string; role: string; rama?: string; divisiones?: string[] }
+export const ORGANIGRAMA: { area: string; icon: string; color: string; members: OrgMember[] }[] = [
+  { area: "Dirección", icon: "🎯", color: "#C8102E", members: [
+    { nombre: "Franco Lucchini", role: "Director Deportivo" },
+    { nombre: "Florencia Marquez", role: "Directora Hockey" },
+  ]},
+  { area: "Entrenadores Rama A", icon: "📋", color: "#3B82F6", members: [
+    { nombre: "Franco Medici", role: "Entrenador", rama: "A", divisiones: ["Primera", "Quinta"] },
+    { nombre: "Juan Ignacio González", role: "Entrenador", rama: "A", divisiones: ["Segunda", "Sexta"] },
+    { nombre: "Laureano Muslera", role: "Entrenador", rama: "A", divisiones: ["Séptima", "Octava"] },
+    { nombre: "Josefina Ojeda", role: "Entrenador", rama: "A", divisiones: ["Novena"] },
+    { nombre: "Clara Urrutia", role: "Entrenador", rama: "A", divisiones: ["Décima"] },
+    { nombre: "Milagros Perez Pontis", role: "Entrenador", rama: "A", divisiones: ["Pre Décima"] },
+    { nombre: "Lucila Santucci", role: "Entrenador", rama: "A", divisiones: ["Pre Décima"] },
+  ]},
+  { area: "Entrenadores Rama B", icon: "📋", color: "#8B5CF6", members: [
+    { nombre: "Juan Carballo", role: "Entrenador", rama: "B", divisiones: ["Primera", "Quinta"] },
+    { nombre: "Juan López", role: "Entrenador", rama: "B", divisiones: ["Segunda", "Sexta"] },
+    { nombre: "Gonzalo Franco", role: "Entrenador", rama: "B", divisiones: ["Séptima", "Octava"] },
+    { nombre: "Carla González", role: "Entrenador", rama: "B", divisiones: ["Novena"] },
+    { nombre: "Sol Cruceño", role: "Entrenador", rama: "B", divisiones: ["Décima"] },
+  ]},
+  { area: "Entrenadores Rama C", icon: "📋", color: "#10B981", members: [
+    { nombre: "Franco Lucchini", role: "Entrenador", rama: "C", divisiones: ["Primera"] },
+    { nombre: "Agustín Rubiño", role: "Entrenador", rama: "C", divisiones: ["Segunda", "Sexta"] },
+    { nombre: "Valentina Neira", role: "Entrenador", rama: "C", divisiones: ["Quinta"] },
+    { nombre: "Facundo Paredes", role: "Entrenador", rama: "C", divisiones: ["Séptima", "Octava"] },
+    { nombre: "Agostina Fredes", role: "Entrenador", rama: "C", divisiones: ["Novena"] },
+    { nombre: "Teresita Trabazo", role: "Entrenador", rama: "C", divisiones: ["Décima"] },
+  ]},
+  { area: "Entrenadores Rama D", icon: "📋", color: "#F59E0B", members: [
+    { nombre: "Tamara Tejada", role: "Entrenador", rama: "D", divisiones: ["Quinta", "Sexta"] },
+    { nombre: "Juan Andrés Famiglietti", role: "Entrenador", rama: "D", divisiones: ["Quinta", "Séptima"] },
+    { nombre: "Manuela Quevedo", role: "Entrenador", rama: "D", divisiones: ["Octava"] },
+    { nombre: "Nahir Uzair", role: "Entrenador", rama: "D", divisiones: ["Novena"] },
+    { nombre: "Camila Lázzaro", role: "Entrenador", rama: "D", divisiones: ["Décima"] },
+  ]},
+  { area: "Entrenadores Rama E", icon: "📋", color: "#EC4899", members: [
+    { nombre: "Milagros Baztan", role: "Entrenador", rama: "E", divisiones: ["Quinta"] },
+    { nombre: "Pedro Alvarado", role: "Entrenador", rama: "E", divisiones: ["Mamis"] },
+    { nombre: "Enzo Bataglia", role: "Entrenador", rama: "E", divisiones: ["Cuartas"] },
+  ]},
+  { area: "Desarrollo", icon: "⚡", color: "#6366F1", members: [
+    { nombre: "Gilberto Guerci", role: "Desarrollo Motor" },
+    { nombre: "Facundo Paredes", role: "Desarrollo Técnico" },
+    { nombre: "Juan Ignacio González", role: "Desarrollo Técnico" },
+  ]},
+  { area: "Monitoras", icon: "👁️", color: "#14B8A6", members: [
+    { nombre: "Florencia Herrera", role: "Monitora" },
+    { nombre: "Camila Correa", role: "Monitora" },
+    { nombre: "Amparo Blanco", role: "Monitora" },
+  ]},
+  { area: "Preparación Física", icon: "🏋️", color: "#F97316", members: [
+    { nombre: "Matías Elías", role: "Coordinador PF" },
+  ]},
+  { area: "PF Rama A", icon: "🏋️", color: "#F97316", members: [
+    { nombre: "Matías Elías", role: "PF", rama: "A", divisiones: ["Primera", "Segunda", "Quinta"] },
+    { nombre: "Federico Ontivero", role: "PF", rama: "A", divisiones: ["Sexta", "Séptima", "Octava"] },
+  ]},
+  { area: "PF Rama B", icon: "🏋️", color: "#F97316", members: [
+    { nombre: "Federico García", role: "PF", rama: "B", divisiones: ["Primera", "Segunda", "Quinta"] },
+    { nombre: "Segundo Gelardi", role: "PF", rama: "B", divisiones: ["Sexta", "Séptima", "Octava"] },
+  ]},
+  { area: "PF Rama C", icon: "🏋️", color: "#F97316", members: [
+    { nombre: "Emmanuel Morales", role: "PF", rama: "C", divisiones: ["Primera", "Segunda", "Quinta"] },
+    { nombre: "Gilberto Guerci", role: "PF", rama: "C", divisiones: ["Sexta", "Séptima", "Octava"] },
+  ]},
+  { area: "PF Rama D", icon: "🏋️", color: "#F97316", members: [
+    { nombre: "Juan Andrés Famiglietti", role: "PF", rama: "D", divisiones: ["Quinta", "Sexta"] },
+    { nombre: "Carolina Armani", role: "PF", rama: "D", divisiones: ["Séptima", "Octava"] },
+  ]},
+  { area: "Gym", icon: "🏠", color: "#78716C", members: [
+    { nombre: "Emmanuel Morales", role: "Responsable Gym" },
+  ]},
+];
+
+/* ── Division age mapping (year cutoffs for 2026 season) ── */
+export const DIV_YEAR_MAP: Record<string, { min: number; max: number }> = {
+  "Primera":     { min: 0, max: 2008 },
+  "Segunda":     { min: 0, max: 2008 },
+  "Cuartas":     { min: 0, max: 9999 },
+  "Quinta":      { min: 2009, max: 2010 },
+  "Sexta":       { min: 2011, max: 2012 },
+  "Séptima":     { min: 2013, max: 2013 },
+  "Octava":      { min: 2014, max: 2014 },
+  "Novena":      { min: 2015, max: 2016 },
+  "Décima":      { min: 2017, max: 2018 },
+  "Pre Décima":  { min: 2019, max: 2025 },
+  "Mamis":       { min: 0, max: 9999 },
+};
 
 /* ── LBF Status ── */
 export const LBF_ST = { BORR: "borrador", PEND: "pendiente", APR: "aprobada", RECH: "rechazada" } as const;
@@ -61,22 +156,6 @@ export const CERT_SC: Record<string,{l:string;c:string;bg:string}> = {
   [CERT_ST.PEND]: { l: "Pendiente", c: T.yl, bg: "#FEF3C7" },
 };
 
-/* ── Division age mapping (year cutoffs for 2025 season) ── */
-export const DIV_YEAR_MAP: Record<string, { min: number; max: number }> = {
-  "Primera":     { min: 0, max: 999 },
-  "Reserva":     { min: 0, max: 999 },
-  "Sub 21":      { min: 2004, max: 2006 },
-  "Juveniles A": { min: 2007, max: 2008 },
-  "Juveniles B": { min: 2009, max: 2010 },
-  "Cadetes A":   { min: 2011, max: 2011 },
-  "Cadetes B":   { min: 2012, max: 2012 },
-  "Menores A":   { min: 2013, max: 2013 },
-  "Menores B":   { min: 2014, max: 2014 },
-  "Pre-mini":    { min: 2015, max: 2016 },
-  "Mini":        { min: 2017, max: 2018 },
-  "Escuelita":   { min: 2019, max: 2025 },
-};
-
 /* ── Helpers ── */
 export const fn = (u: any) => ((u.first_name || u.nombre || "") + " " + (u.last_name || u.apellido || "")).trim();
 
@@ -84,7 +163,7 @@ export function calcDivision(fechaNac: string): Division | null {
   if (!fechaNac) return null;
   const year = new Date(fechaNac).getFullYear();
   for (const [div, range] of Object.entries(DIV_YEAR_MAP)) {
-    if (range.min > 0 && year >= range.min && year <= range.max) return div as Division;
+    if (range.min > 0 && range.max < 9999 && year >= range.min && year <= range.max) return div as Division;
   }
   return "Primera";
 }
@@ -94,6 +173,7 @@ export const TABS = [
   { id: "dashboard", l: "Dashboard", i: "📊", minLv: 1 },
   { id: "padron", l: "Padrón", i: "👥", minLv: 3 },
   { id: "lbf", l: "Lista de Buena Fe", i: "📋", minLv: 3 },
+  { id: "organigrama", l: "Organigrama", i: "🏗️", minLv: 3 },
   { id: "staff", l: "Staff", i: "👤", minLv: 1 },
 ] as const;
 export type TabId = typeof TABS[number]["id"];

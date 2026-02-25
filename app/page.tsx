@@ -18,6 +18,7 @@ import PlayerForm from "@/components/main/PlayerForm";
 import PlayerDetail from "@/components/main/PlayerDetail";
 import LBFManager from "@/components/main/LBFManager";
 import LBFSummary from "@/components/main/LBFSummary";
+import Organigrama from "@/components/main/Organigrama";
 import StaffManager from "@/components/main/StaffManager";
 import type { Jugadora } from "@/lib/supabase/types";
 
@@ -206,6 +207,8 @@ export default function Page() {
             <LBFManager jugadoras={jugadoras} lbfs={lbfs} userId={user.id} userLevel={userLevel} onRefresh={fetchLBFs} />
           </>
         );
+      case "organigrama":
+        return <Organigrama />;
       case "staff":
         return <StaffManager staff={staff} onRefresh={fetchStaff} userLevel={userLevel} />;
       default:
