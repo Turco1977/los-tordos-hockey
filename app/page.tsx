@@ -80,6 +80,47 @@ export default function Page() {
     await loadData();
   };
 
+  const bulkUpload = async (file: File) => {
+    try {
+      const text = await file.text();
+      const lines = text.split("\n").filter(l => l.trim());
+      if (lines.length < 2) { setToast({ msg: "CSV vacío o sin datos", type: "err" }); return; }
+      const headers = lines[0].split(",").map(h => h.replace(/"/g, "").trim().toLowerCase());
+      const rows = lines.slice(1).map(line => {
+        const vals = line.split(",").map(v => v.replace(/"/g, "").trim());
+        const obj: any = {};
+        headers.forEach((h, i) => { obj[h] = vals[i] || ""; });
+        return {
+          nombre: obj.nombre || obj.name || "",
+          apellido: obj.apellido || obj.surname || "",
+          dni: obj.dni || "",
+          fecha_nacimiento: obj.fecha_nacimiento || obj["fecha nac"] || obj.nacimiento || "",
+          rama: obj.rama || "Competitiva",
+          posicion: obj.posicion || null,
+          socia: ["si","sí","true","1"].includes((obj.socia || "").toLowerCase()),
+          derecho_jugadora: ["si","sí","true","1"].includes((obj.derecho || obj.derecho_jugadora || "").toLowerCase()),
+          cert_medico_estado: obj.cert_medico_estado || "pendiente",
+          cert_medico_vencimiento: obj.cert_medico_vencimiento || null,
+          activa: true,
+        };
+      }).filter(r => r.nombre && r.apellido && r.dni && r.fecha_nacimiento);
+      if (rows.length === 0) { setToast({ msg: "No se encontraron filas válidas. Columnas requeridas: nombre, apellido, dni, fecha_nacimiento", type: "err" }); return; }
+      const { error } = await sb.from("jugadoras").insert(rows);
+      if (error) throw error;
+      setToast({ msg: `${rows.length} jugadora(s) cargadas`, type: "ok" });
+      await fetchJugadoras();
+    } catch (e: any) { setToast({ msg: e.message || "Error en carga masiva", type: "err" }); }
+  };
+
+  const delJugadoras = async (ids: string[]) => {
+    try {
+      const { error } = await sb.from("jugadoras").delete().in("id", ids);
+      if (error) throw error;
+      setToast({ msg: `${ids.length} jugadora(s) eliminada(s)`, type: "ok" });
+      await fetchJugadoras();
+    } catch (e: any) { setToast({ msg: e.message || "Error al eliminar", type: "err" }); }
+  };
+
   const handleLogout = async () => {
     await sb.auth.signOut();
     setUser(null); setProfile(null); setRoles([]); setActiveRole(null);
@@ -117,7 +158,7 @@ export default function Page() {
         if (playerView === "new") return <PlayerForm onSave={savePlayer} onCancel={() => setPlayerView("list")} saving={saving} />;
         if (playerView === "form" && selPlayer) return <PlayerForm jugadora={selPlayer} onSave={savePlayer} onCancel={() => setPlayerView("detail")} saving={saving} />;
         if (playerView === "detail" && selPlayer) return <PlayerDetail jugadora={selPlayer} onEdit={() => setPlayerView("form")} onBack={() => { setPlayerView("list"); setSelPlayer(null); }} userLevel={userLevel} />;
-        return <PlayerRegistry jugadoras={jugadoras} onSelect={j => { setSelPlayer(j); setPlayerView("detail"); }} onNew={() => { setSelPlayer(null); setPlayerView("new"); }} userLevel={userLevel} />;
+        return <PlayerRegistry jugadoras={jugadoras} onSelect={j => { setSelPlayer(j); setPlayerView("detail"); }} onNew={() => { setSelPlayer(null); setPlayerView("new"); }} onDel={delJugadoras} onBulk={bulkUpload} userLevel={userLevel} />;
       case "lbf":
         return (
           <>
