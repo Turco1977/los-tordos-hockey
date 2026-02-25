@@ -1,0 +1,11 @@
+{
+  "name": "Los Tordos Hockey - Panel de Gestión",
+  "short_name": "LT Hockey",
+  "description": "Panel de gestión Los Tordos Hockey",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A1628",
+  "theme_color": "#0A1628",
+  "orientation": "any",
+  "icons": []
+}
