@@ -9,7 +9,7 @@ export function emptyJugadora(): Omit<JugadoraInsert, "division_efectiva"> {
     dni: "",
     fecha_nacimiento: "",
     division_manual: null,
-    rama: "Competitiva",
+    rama: "A",
     posicion: null,
     email: null,
     telefono: null,

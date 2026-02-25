@@ -23,7 +23,7 @@ export default function LBFSummary({ jugadoras }: { jugadoras: Jugadora[] }) {
       <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
         {byRama.map(r => (
           <div key={r.rama} style={{ textAlign: "center" }}>
-            <Ring pct={r.pct} color={r.pct >= 75 ? colors.gn : r.pct >= 50 ? colors.yl : colors.rd} size={80} icon={r.rama === "Competitiva" ? "🏑" : "🌟"} />
+            <Ring pct={r.pct} color={r.pct >= 75 ? colors.gn : r.pct >= 50 ? colors.yl : colors.rd} size={80} icon={r.rama === "A" ? "🏑" : "🌟"} />
             <div style={{ fontSize: 11, fontWeight: 700, color: colors.nv, marginTop: 4 }}>{r.rama}</div>
             <div style={{ fontSize: 10, color: colors.g4 }}>{r.total} jugadoras | {r.cert} cert | {r.der} DJ</div>
           </div>

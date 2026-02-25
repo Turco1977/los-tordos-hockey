@@ -12,7 +12,7 @@ export default function Dashboard({ jugadoras, lbfs }: { jugadoras: Jugadora[]; 
   const stats = useMemo(() => {
     const activas = jugadoras.filter(j => j.activa);
     const total = activas.length;
-    const comp = activas.filter(j => j.rama === "Competitiva").length;
+    const comp = activas.filter(j => j.rama === "A").length;
     const noComp = total - comp;
     const certVig = activas.filter(j => j.cert_medico_estado === "vigente").length;
     const socias = activas.filter(j => j.socia).length;

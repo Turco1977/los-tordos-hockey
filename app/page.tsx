@@ -127,7 +127,7 @@ export default function Page() {
         const lbfVal = (obj.lbf || "").toLowerCase();
         rows.push({
           nombre, apellido, dni, fecha_nacimiento: fecha,
-          rama: obj.rama || "Competitiva",
+          rama: obj.rama || "A",
           posicion: obj.posicion || null,
           socia: ["si","sí","true","1"].includes((obj.socia || "").toLowerCase()),
           derecho_jugadora: lbfVal === "si" || ["si","sí","true","1"].includes((obj.derecho || obj.derecho_jugadora || "").toLowerCase()),
