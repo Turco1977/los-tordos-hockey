@@ -4,7 +4,7 @@ import { useC } from "@/lib/theme-context";
 import { Card, Btn, LbfBadge, Empty, Spinner, useMobile, Pager } from "@/components/ui";
 import { DIVISIONES, RAMAS, LBF_ST } from "@/lib/constants";
 import { canAddToLBF, fullName } from "@/lib/mappers";
-import { printLBF } from "@/lib/export";
+import { printLBF, shareLBFWhatsApp } from "@/lib/export";
 import { createClient } from "@/lib/supabase/client";
 import { paginate } from "@/lib/pagination";
 import type { Jugadora, LBF, LBFJugadora } from "@/lib/supabase/types";
@@ -44,8 +44,6 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
 
   const addPlayer = async (j: Jugadora) => {
     if (!selLbf) return;
-    const check = canAddToLBF(j);
-    if (!check.ok) return alert(check.reason);
     await sb.from("lbf_jugadoras").insert({ lbf_id: selLbf.id, jugadora_id: j.id, titular: true, orden: lbfPlayers.length + 1 });
     await sb.from("lbf_historial").insert({ lbf_id: selLbf.id, accion: "jugadora_agregada", detalle: fullName(j), user_id: userId });
     openDetail(selLbf);
@@ -72,7 +70,13 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
   const available = useMemo(() => {
     if (!selLbf) return [];
     const inLbf = new Set(lbfPlayers.map(p => p.jugadora_id));
-    return jugadoras.filter(j => j.activa && (j.division_efectiva || j.division_manual) === selLbf.division && j.rama === selLbf.rama && !inLbf.has(j.id));
+    return jugadoras.filter(j => j.activa && !inLbf.has(j.id)).sort((a, b) => {
+      // Prioritize same division/rama, then sort alphabetically
+      const aMatch = ((a.division_efectiva || a.division_manual) === selLbf.division && a.rama === selLbf.rama) ? 0 : 1;
+      const bMatch = ((b.division_efectiva || b.division_manual) === selLbf.division && b.rama === selLbf.rama) ? 0 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+      return a.apellido.localeCompare(b.apellido);
+    });
   }, [selLbf, jugadoras, lbfPlayers]);
 
   const pagedLbfs = paginate(lbfs, page, 15);
@@ -116,7 +120,8 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
             {editable && <Btn s="s" v="w" onClick={() => updateEstado("pendiente")}>Enviar a Aprobación</Btn>}
             {selLbf.estado === LBF_ST.PEND && userLevel <= 2 && <Btn s="s" v="s" onClick={() => updateEstado("aprobada")}>Aprobar</Btn>}
             {selLbf.estado === LBF_ST.PEND && userLevel <= 2 && <Btn s="s" v="r" onClick={() => updateEstado("rechazada")}>Rechazar</Btn>}
-            <Btn s="s" v="g" onClick={() => printLBF(selLbf, lbfPlayers)}>Imprimir</Btn>
+            <Btn s="s" v="g" onClick={() => printLBF(selLbf, lbfPlayers)}>📄 Descargar PDF</Btn>
+            <Btn s="s" v="g" onClick={() => shareLBFWhatsApp(selLbf, lbfPlayers)}>📲 WhatsApp</Btn>
           </div>
         </div>
 
@@ -128,11 +133,15 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
                 <div style={{ maxHeight: 400, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
                   {available.map(j => {
                     const check = canAddToLBF(j);
+                    const divMatch = (j.division_efectiva || j.division_manual) === selLbf?.division && j.rama === selLbf?.rama;
                     return (
-                      <div key={j.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", borderRadius: 6, border: "1px solid " + colors.g1, fontSize: 11 }}>
-                        <span style={{ color: colors.nv }}>{j.apellido}, {j.nombre}</span>
-                        {check.ok ? <button onClick={() => addPlayer(j)} style={{ background: colors.gn, color: "#fff", border: "none", borderRadius: 4, padding: "3px 8px", fontSize: 10, cursor: "pointer", fontWeight: 600 }}>+ Agregar</button>
-                          : <span style={{ fontSize: 9, color: colors.rd }}>{check.reason}</span>}
+                      <div key={j.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", borderRadius: 6, border: "1px solid " + colors.g1, fontSize: 11, opacity: divMatch ? 1 : 0.6 }}>
+                        <div>
+                          <span style={{ color: colors.nv }}>{j.apellido}, {j.nombre}</span>
+                          {!divMatch && <span style={{ fontSize: 9, color: colors.yl, marginLeft: 4 }}>({j.rama} - {j.division_efectiva || j.division_manual || "Sin div."})</span>}
+                          {!check.ok && <span style={{ fontSize: 9, color: colors.rd, marginLeft: 4 }}>⚠ {check.reason}</span>}
+                        </div>
+                        <button onClick={() => addPlayer(j)} style={{ background: colors.gn, color: "#fff", border: "none", borderRadius: 4, padding: "3px 8px", fontSize: 10, cursor: "pointer", fontWeight: 600, flexShrink: 0 }}>+ Agregar</button>
                       </div>
                     );
                   })}

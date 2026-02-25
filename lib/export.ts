@@ -64,3 +64,29 @@ ${suplentes.map((j, i) => `<tr><td>${i + 1}</td><td>${j.numero_camiseta || "-"}<
     w.print();
   }
 }
+
+/* ── Share LBF via WhatsApp ── */
+export function shareLBFWhatsApp(lbf: LBF, jugadoras: (LBFJugadora & { jugadora?: Jugadora })[]) {
+  const titulares = jugadoras.filter(j => j.titular).sort((a, b) => a.orden - b.orden);
+  const suplentes = jugadoras.filter(j => !j.titular).sort((a, b) => a.orden - b.orden);
+
+  let text = `🏑 *Lista de Buena Fe*\n`;
+  text += `*${lbf.nombre}*\n`;
+  text += `${lbf.division} - Rama ${lbf.rama}\n`;
+  if (lbf.rival) text += `vs ${lbf.rival}\n`;
+  if (lbf.fecha_partido) text += `📅 ${lbf.fecha_partido}\n`;
+  if (lbf.sede) text += `📍 ${lbf.sede}\n`;
+  text += `\n*Titulares (${titulares.length}):*\n`;
+  titulares.forEach((j, i) => {
+    text += `${i + 1}. ${j.jugadora ? fullName(j.jugadora) : "-"}${j.numero_camiseta ? ` (#${j.numero_camiseta})` : ""}\n`;
+  });
+  if (suplentes.length > 0) {
+    text += `\n*Suplentes (${suplentes.length}):*\n`;
+    suplentes.forEach((j, i) => {
+      text += `${i + 1}. ${j.jugadora ? fullName(j.jugadora) : "-"}${j.numero_camiseta ? ` (#${j.numero_camiseta})` : ""}\n`;
+    });
+  }
+  text += `\n_Los Tordos Hockey - ${new Date().toLocaleDateString("es-AR")}_`;
+
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+}
