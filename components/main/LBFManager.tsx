@@ -67,6 +67,17 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
     setSelLbf({ ...selLbf, estado: estado as any });
   };
 
+  const deleteLBF = async () => {
+    if (!selLbf) return;
+    if (!confirm(`¿Eliminar "${selLbf.nombre}"? Esta acción no se puede deshacer.`)) return;
+    const res = await fetch("/api/hockey/lbf", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: selLbf.id }) });
+    const data = await res.json();
+    if (data.error) return alert(data.error);
+    onRefresh();
+    setView("list");
+    setSelLbf(null);
+  };
+
   const available = useMemo(() => {
     if (!selLbf) return [];
     const inLbf = new Set(lbfPlayers.map(p => p.jugadora_id));
@@ -122,6 +133,7 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
             {selLbf.estado === LBF_ST.PEND && userLevel <= 2 && <Btn s="s" v="r" onClick={() => updateEstado("rechazada")}>Rechazar</Btn>}
             <Btn s="s" v="g" onClick={() => printLBF(selLbf, lbfPlayers)}>📄 Descargar PDF</Btn>
             <Btn s="s" v="g" onClick={() => shareLBFWhatsApp(selLbf, lbfPlayers)}>📲 WhatsApp</Btn>
+            {userLevel <= 3 && <Btn s="s" v="r" onClick={deleteLBF}>🗑 Eliminar</Btn>}
           </div>
         </div>
 
