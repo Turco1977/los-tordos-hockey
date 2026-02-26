@@ -86,8 +86,11 @@ interface RingProps {
   cu?: number;
   ok?: number;
   tot?: number;
+  cExt?: string;
+  cMid?: string;
+  cInt?: string;
 }
-export const Ring = memo(function Ring({ pct, color, size, icon, pe, cu, ok, tot }: RingProps) {
+export const Ring = memo(function Ring({ pct, color, size, icon, pe, cu, ok, tot, cExt, cMid, cInt }: RingProps) {
   const { colors, isDark } = useC();
   const cx = size / 2, sw = size * 0.07;
   const track = isDark ? "rgba(255,255,255,.25)" : colors.g2;
@@ -99,11 +102,11 @@ export const Ring = memo(function Ring({ pct, color, size, icon, pe, cu, ok, tot
       <div style={{ position: "relative", width: size, height: size }}>
         <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
           <circle cx={cx} cy={cx} r={rExt} fill="none" stroke={track} strokeWidth={sw} />
-          <circle cx={cx} cy={cx} r={rExt} fill="none" stroke={colors.rd} strokeWidth={sw} strokeDasharray={ciExt} strokeDashoffset={ciExt - pePct * ciExt} strokeLinecap="round" />
+          <circle cx={cx} cy={cx} r={rExt} fill="none" stroke={cExt || colors.rd} strokeWidth={sw} strokeDasharray={ciExt} strokeDashoffset={ciExt - pePct * ciExt} strokeLinecap="round" />
           <circle cx={cx} cy={cx} r={rMid} fill="none" stroke={track} strokeWidth={sw} />
-          <circle cx={cx} cy={cx} r={rMid} fill="none" stroke={colors.yl} strokeWidth={sw} strokeDasharray={ciMid} strokeDashoffset={ciMid - cuPct * ciMid} strokeLinecap="round" />
+          <circle cx={cx} cy={cx} r={rMid} fill="none" stroke={cMid || colors.yl} strokeWidth={sw} strokeDasharray={ciMid} strokeDashoffset={ciMid - cuPct * ciMid} strokeLinecap="round" />
           <circle cx={cx} cy={cx} r={rInt} fill="none" stroke={track} strokeWidth={sw} />
-          <circle cx={cx} cy={cx} r={rInt} fill="none" stroke={colors.gn} strokeWidth={sw} strokeDasharray={ciInt} strokeDashoffset={ciInt - okPct * ciInt} strokeLinecap="round" />
+          <circle cx={cx} cy={cx} r={rInt} fill="none" stroke={cInt || colors.gn} strokeWidth={sw} strokeDasharray={ciInt} strokeDashoffset={ciInt - okPct * ciInt} strokeLinecap="round" />
         </svg>
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           {icon && <span style={{ fontSize: size / 5 }}>{icon}</span>}

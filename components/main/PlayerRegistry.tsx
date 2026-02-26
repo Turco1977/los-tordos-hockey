@@ -92,8 +92,10 @@ export default function PlayerRegistry({ jugadoras, onSelect, onNew, onDel, onBu
                 {selMode && <input type="checkbox" checked={isSel} readOnly style={{ position: "absolute", top: 8, left: 8, width: 16, height: 16, cursor: "pointer", accentColor: "#DC2626" }} />}
                 <div style={{ display: "flex", justifyContent: "center" }}>
                   <Ring pct={a.pct} color={a.color} size={mob ? 80 : 100} icon="👤"
-                    pe={a.certOk ? 0 : 1} cu={a.djOk ? 0 : 1} ok={a.sociaOk ? 1 : 0}
-                    tot={3} />
+                    pe={1} cu={1} ok={1} tot={1}
+                    cExt={a.certOk ? colors.gn : colors.rd}
+                    cMid={a.djOk ? colors.gn : colors.yl}
+                    cInt={a.sociaOk ? colors.gn : colors.rd} />
                 </div>
                 <div style={{ fontSize: mob ? 12 : 14, fontWeight: 700, color: colors.nv, marginTop: 6, lineHeight: 1.2 }}>
                   {j.apellido}
