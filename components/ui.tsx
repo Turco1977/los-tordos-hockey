@@ -78,12 +78,12 @@ export function Card({ children, style: st, onClick }: { children: React.ReactNo
 
 /* ── PROGRESS RING ── */
 export function Ring({ pct, color, size, icon }: { pct: number; color: string; size: number; icon?: string }) {
-  const { colors } = useC();
+  const { colors, isDark } = useC();
   const cx = size / 2, r = cx - 6, ci = 2 * Math.PI * r, of2 = ci - (pct / 100) * ci;
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={cx} cy={cx} r={r} fill="none" stroke={colors.g3} strokeWidth="5" />
+        <circle cx={cx} cy={cx} r={r} fill="none" stroke={isDark ? "rgba(255,255,255,.15)" : colors.g2} strokeWidth="5" />
         <circle cx={cx} cy={cx} r={r} fill="none" stroke={color} strokeWidth="5" strokeDasharray={ci} strokeDashoffset={of2} strokeLinecap="round" />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
