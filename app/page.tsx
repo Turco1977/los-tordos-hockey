@@ -199,7 +199,7 @@ export default function Page() {
   const content = () => {
     switch (tab) {
       case "dashboard":
-        return <Dashboard jugadoras={jugadoras} lbfs={lbfs} userLevel={userLevel} />;
+        return <Dashboard jugadoras={jugadoras} lbfs={lbfs} partidos={store.partidos} userLevel={userLevel} />;
       case "padron":
         if (playerView === "new") return <PlayerForm onSave={savePlayer} onCancel={() => setPlayerView("list")} saving={saving} />;
         if (playerView === "form" && selPlayer) return <PlayerForm jugadora={selPlayer} onSave={savePlayer} onCancel={() => setPlayerView("detail")} saving={saving} />;
