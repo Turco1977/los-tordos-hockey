@@ -81,7 +81,7 @@ export function Ring({ pct, color, size, icon }: { pct: number; color: string; s
   const { colors, isDark } = useC();
   const cx = size / 2, sw = size * 0.07, r = cx - sw / 2 - 1;
   const ci = 2 * Math.PI * r, of2 = ci - (pct / 100) * ci;
-  const track = isDark ? "rgba(255,255,255,.15)" : colors.g2;
+  const track = isDark ? "rgba(255,255,255,.25)" : colors.g2;
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
