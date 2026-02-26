@@ -6,7 +6,7 @@ import { DIVISIONES } from "@/lib/constants";
 import type { Jugadora, LBF } from "@/lib/supabase/types";
 
 export default function Dashboard({ jugadoras, lbfs }: { jugadoras: Jugadora[]; lbfs: LBF[]; userLevel: number }) {
-  const { colors, cardBg } = useC();
+  const { colors, cardBg, isDark } = useC();
   const mob = useMobile();
 
   const stats = useMemo(() => {
@@ -76,7 +76,7 @@ export default function Dashboard({ jugadoras, lbfs }: { jugadoras: Jugadora[]; 
                 let angle = 0;
                 return (
                   <>
-                    <circle cx={cx} cy={cy} r={r} fill="none" stroke={colors.g2} strokeWidth="20" />
+                    <circle cx={cx} cy={cy} r={r} fill="none" stroke={isDark ? "rgba(255,255,255,.15)" : colors.g2} strokeWidth="20" />
                     {entries.map(([, count], i) => {
                       const sweep = (count / total) * 360;
                       const start = angle;

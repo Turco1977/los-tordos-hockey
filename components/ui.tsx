@@ -79,16 +79,18 @@ export function Card({ children, style: st, onClick }: { children: React.ReactNo
 /* ── PROGRESS RING ── */
 export function Ring({ pct, color, size, icon }: { pct: number; color: string; size: number; icon?: string }) {
   const { colors, isDark } = useC();
-  const cx = size / 2, r = cx - 6, ci = 2 * Math.PI * r, of2 = ci - (pct / 100) * ci;
+  const cx = size / 2, sw = size * 0.07, r = cx - sw / 2 - 1;
+  const ci = 2 * Math.PI * r, of2 = ci - (pct / 100) * ci;
+  const track = isDark ? "rgba(255,255,255,.15)" : colors.g2;
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={cx} cy={cx} r={r} fill="none" stroke={isDark ? "rgba(255,255,255,.15)" : colors.g2} strokeWidth="5" />
-        <circle cx={cx} cy={cx} r={r} fill="none" stroke={color} strokeWidth="5" strokeDasharray={ci} strokeDashoffset={of2} strokeLinecap="round" />
+        <circle cx={cx} cy={cx} r={r} fill="none" stroke={track} strokeWidth={sw} />
+        <circle cx={cx} cy={cx} r={r} fill="none" stroke={color} strokeWidth={sw} strokeDasharray={ci} strokeDashoffset={of2} strokeLinecap="round" />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        {icon && <span style={{ fontSize: size / 4 }}>{icon}</span>}
-        <span style={{ fontSize: size / 6, fontWeight: 800, color }}>{pct}%</span>
+        {icon && <span style={{ fontSize: size / 5 }}>{icon}</span>}
+        <span style={{ fontSize: size / 7, fontWeight: 800, color }}>{pct}%</span>
       </div>
     </div>
   );
