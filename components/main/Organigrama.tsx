@@ -5,29 +5,30 @@ import { useMobile } from "@/components/ui";
 import { ORGANIGRAMA } from "@/lib/constants";
 
 function OrgNode({ icon, title, sub, color, children, cnt, expanded, onToggle, mob }: any) {
+  const { colors, cardBg } = useC();
   return (
     <div style={{ marginBottom: 6 }}>
       <div onClick={onToggle} style={{
         display: "flex", alignItems: "center", gap: 8,
         padding: mob ? "8px 10px" : "10px 14px",
-        background: "#fff", borderRadius: 10,
-        border: "1px solid #E8ECF1",
+        background: cardBg, borderRadius: 10,
+        border: "1px solid " + colors.g2,
         borderLeft: "4px solid " + color,
         cursor: "pointer",
       }}>
         <span style={{ fontSize: 18 }}>{icon}</span>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0A1628" }}>{title}</div>
-          {sub && <div style={{ fontSize: 10, color: "#8B95A5" }}>{sub}</div>}
+          <div style={{ fontSize: 13, fontWeight: 700, color: colors.nv }}>{title}</div>
+          {sub && <div style={{ fontSize: 10, color: colors.g4 }}>{sub}</div>}
         </div>
         {cnt !== undefined && (
           <span style={{
-            background: "#F7F8FA", borderRadius: 12,
-            padding: "1px 8px", fontSize: 10, fontWeight: 600, color: "#5A6577",
+            background: colors.g1, borderRadius: 12,
+            padding: "1px 8px", fontSize: 10, fontWeight: 600, color: colors.g5,
           }}>{cnt}</span>
         )}
         <span style={{
-          fontSize: 12, color: "#8B95A5",
+          fontSize: 12, color: colors.g4,
           transform: expanded ? "rotate(90deg)" : "none",
           transition: "transform .2s",
         }}>▶</span>
@@ -46,16 +47,17 @@ function OrgNode({ icon, title, sub, color, children, cnt, expanded, onToggle, m
 }
 
 function MemberCard({ m, color }: { m: any; color: string }) {
+  const { colors } = useC();
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 6,
-      padding: "5px 10px", background: "#FAFAFA",
-      borderRadius: 7, border: "1px solid #E8ECF1", marginBottom: 3,
+      padding: "5px 10px", background: colors.g1,
+      borderRadius: 7, border: "1px solid " + colors.g2, marginBottom: 3,
     }}>
       <span style={{ fontSize: 10 }}>👤</span>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 9, fontWeight: 700, color, textTransform: "uppercase" as const }}>{m.role}</div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#0A1628" }}>{m.nombre}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv }}>{m.nombre}</div>
       </div>
       {m.divisiones && m.divisiones.length > 0 && (
         <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
