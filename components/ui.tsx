@@ -83,7 +83,7 @@ export function Ring({ pct, color, size, icon }: { pct: number; color: string; s
   return (
     <div style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={cx} cy={cx} r={r} fill="none" stroke={colors.g2} strokeWidth="5" />
+        <circle cx={cx} cy={cx} r={r} fill="none" stroke={colors.g3} strokeWidth="5" />
         <circle cx={cx} cy={cx} r={r} fill="none" stroke={color} strokeWidth="5" strokeDasharray={ci} strokeDashoffset={of2} strokeLinecap="round" />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
