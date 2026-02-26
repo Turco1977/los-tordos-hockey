@@ -133,15 +133,19 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
                 <div style={{ maxHeight: 400, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
                   {available.map(j => {
                     const check = canAddToLBF(j);
+                    const blocked = !check.ok;
                     const divMatch = (j.division_efectiva || j.division_manual) === selLbf?.division && j.rama === selLbf?.rama;
                     return (
-                      <div key={j.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", borderRadius: 6, border: "1px solid " + colors.g1, fontSize: 11, opacity: divMatch ? 1 : 0.6 }}>
+                      <div key={j.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", borderRadius: 6, border: "1px solid " + (blocked ? colors.rd + "40" : colors.g1), background: blocked ? colors.rd + "08" : "transparent", fontSize: 11, opacity: divMatch ? 1 : 0.6 }}>
                         <div>
-                          <span style={{ color: colors.nv }}>{j.apellido}, {j.nombre}</span>
+                          <span style={{ color: blocked ? colors.g4 : colors.nv }}>{j.apellido}, {j.nombre}</span>
                           {!divMatch && <span style={{ fontSize: 9, color: colors.yl, marginLeft: 4 }}>({j.rama} - {j.division_efectiva || j.division_manual || "Sin div."})</span>}
-                          {!check.ok && <span style={{ fontSize: 9, color: colors.rd, marginLeft: 4 }}>⚠ {check.reason}</span>}
+                          {blocked && <div style={{ fontSize: 9, color: colors.rd, fontWeight: 600, marginTop: 1 }}>🚫 {check.reason}</div>}
                         </div>
-                        <button onClick={() => addPlayer(j)} style={{ background: colors.gn, color: "#fff", border: "none", borderRadius: 4, padding: "3px 8px", fontSize: 10, cursor: "pointer", fontWeight: 600, flexShrink: 0 }}>+ Agregar</button>
+                        {blocked
+                          ? <span style={{ fontSize: 9, color: colors.rd, fontWeight: 600, flexShrink: 0, padding: "3px 8px" }}>Bloqueada</span>
+                          : <button onClick={() => addPlayer(j)} style={{ background: colors.gn, color: "#fff", border: "none", borderRadius: 4, padding: "3px 8px", fontSize: 10, cursor: "pointer", fontWeight: 600, flexShrink: 0 }}>+ Agregar</button>
+                        }
                       </div>
                     );
                   })}
