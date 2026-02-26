@@ -24,8 +24,10 @@ export default function PlayerRegistry({ jugadoras, onSelect, onNew, onDel, onBu
     if (filters.division) list = list.filter(j => (j.division_efectiva || j.division_manual) === filters.division);
     if (filters.rama) list = list.filter(j => j.rama === filters.rama);
     if (filters.cert) list = list.filter(j => j.cert_medico_estado === filters.cert);
-    if (filters.activa === "si") list = list.filter(j => j.activa);
-    else if (filters.activa === "no") list = list.filter(j => !j.activa);
+    if (filters.estado) list = list.filter(j => j.estado === filters.estado);
+    if (filters.derecho === "si") list = list.filter(j => j.derecho_jugadora);
+    else if (filters.derecho === "no") list = list.filter(j => !j.derecho_jugadora);
+    if (filters.departamento) list = list.filter(j => j.departamento === filters.departamento);
     return list;
   }, [jugadoras, filters]);
 

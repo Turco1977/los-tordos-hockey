@@ -32,6 +32,25 @@ export const POSICIONES = [
   "Volante",
 ] as const;
 
+/* ── Departamentos (Mendoza) ── */
+export const DEPARTAMENTOS = [
+  "Capital", "Godoy Cruz", "Guaymallén", "Las Heras", "Lavalle",
+  "Luján de Cuyo", "Maipú", "San Martín", "Junín", "Rivadavia",
+  "San Rafael", "General Alvear", "Malargüe", "Tupungato", "Tunuyán",
+  "San Carlos", "Santa Rosa", "La Paz", "Otro",
+] as const;
+
+/* ── Estados de Jugadora ── */
+export const ESTADO_JUG = { ACT: "activa", SUS: "suspendida", BAJA: "baja" } as const;
+
+export const MOTIVOS_BAJA = [
+  "No renovación de temporada",
+  "Decisión personal",
+  "Lesión prolongada",
+  "Traslado",
+  "Otro",
+] as const;
+
 /* ── Hockey Roles ── */
 export const HOCKEY_ROLES: Record<string,{l:string;i:string;lv:number}> = {
   director_deportivo:  { l: "Director Deportivo", i: "🎯", lv: 1 },

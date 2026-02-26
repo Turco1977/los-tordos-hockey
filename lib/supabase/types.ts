@@ -20,6 +20,8 @@ export interface HockeyRole {
   profile?: Profile;
 }
 
+export type EstadoJugadora = "activa" | "suspendida" | "baja";
+
 export interface Jugadora {
   id: string;
   nombre: string;
@@ -44,6 +46,15 @@ export interface Jugadora {
   grupo_sanguineo: string | null;
   observaciones: string | null;
   activa: boolean;
+  estado: EstadoJugadora;
+  fecha_alta: string | null;
+  fecha_baja: string | null;
+  motivo_baja: string | null;
+  temporada: string | null;
+  contacto_tutor_nombre: string | null;
+  contacto_tutor_telefono: string | null;
+  contacto_tutor_email: string | null;
+  departamento: string | null;
   created_at: string;
   updated_at: string;
 }

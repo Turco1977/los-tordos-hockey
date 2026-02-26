@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useC } from "@/lib/theme-context";
 import { Btn, useMobile } from "@/components/ui";
-import { DIVISIONES, RAMAS, POSICIONES, calcDivision } from "@/lib/constants";
+import { DIVISIONES, RAMAS, POSICIONES, DEPARTAMENTOS, ESTADO_JUG, MOTIVOS_BAJA, calcDivision } from "@/lib/constants";
 import { emptyJugadora, jugadoraToForm } from "@/lib/mappers";
 import { createClient } from "@/lib/supabase/client";
 import type { Jugadora } from "@/lib/supabase/types";
@@ -30,6 +30,7 @@ export default function PlayerForm({ jugadora, onSave, onCancel, saving }: { jug
     setErr("");
     if (dniErr) return;
     if (!form.nombre || !form.apellido || !form.dni || !form.fecha_nacimiento) { setErr("Nombre, apellido, DNI y fecha de nacimiento son obligatorios"); return; }
+    if (form.estado === "baja" && !form.motivo_baja) { setErr("El motivo de baja es obligatorio"); return; }
     try { await onSave(form); } catch (ex: any) { setErr(ex.message || "Error al guardar"); }
   };
 
@@ -67,7 +68,23 @@ export default function PlayerForm({ jugadora, onSave, onCancel, saving }: { jug
           <div><label style={labelSt}>Teléfono</label><input value={form.telefono || ""} onChange={e => upd("telefono", e.target.value)} style={inputSt} /></div>
           <div><label style={labelSt}>Teléfono Emergencia</label><input value={form.telefono_emergencia || ""} onChange={e => upd("telefono_emergencia", e.target.value)} style={inputSt} /></div>
           <div><label style={labelSt}>Contacto Emergencia</label><input value={form.contacto_emergencia || ""} onChange={e => upd("contacto_emergencia", e.target.value)} style={inputSt} /></div>
-          <div style={{ gridColumn: mob ? "auto" : "1/-1" }}><label style={labelSt}>Dirección</label><input value={form.direccion || ""} onChange={e => upd("direccion", e.target.value)} style={inputSt} /></div>
+          <div><label style={labelSt}>Dirección</label><input value={form.direccion || ""} onChange={e => upd("direccion", e.target.value)} style={inputSt} /></div>
+          <div>
+            <label style={labelSt}>Departamento</label>
+            <select value={form.departamento || ""} onChange={e => upd("departamento", e.target.value || null)} style={inputSt}>
+              <option value="">Sin especificar</option>
+              {DEPARTAMENTOS.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ background: cardBg, borderRadius: 12, padding: 16, border: "1px solid " + colors.g2, marginBottom: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv, marginBottom: 10 }}>Contacto Tutor/Responsable</div>
+        <div style={grid}>
+          <div><label style={labelSt}>Nombre tutor</label><input value={form.contacto_tutor_nombre || ""} onChange={e => upd("contacto_tutor_nombre", e.target.value || null)} style={inputSt} placeholder="Nombre del padre/madre/tutor" /></div>
+          <div><label style={labelSt}>Teléfono tutor</label><input value={form.contacto_tutor_telefono || ""} onChange={e => upd("contacto_tutor_telefono", e.target.value || null)} style={inputSt} /></div>
+          <div><label style={labelSt}>Email tutor</label><input type="email" value={form.contacto_tutor_email || ""} onChange={e => upd("contacto_tutor_email", e.target.value || null)} style={inputSt} /></div>
         </div>
       </div>
 
@@ -100,17 +117,33 @@ export default function PlayerForm({ jugadora, onSave, onCancel, saving }: { jug
       <div style={{ background: cardBg, borderRadius: 12, padding: 16, border: "1px solid " + colors.g2, marginBottom: 16 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv, marginBottom: 10 }}>Administrativo</div>
         <div style={grid}>
-          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
             <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <input type="checkbox" checked={form.socia} onChange={e => upd("socia", e.target.checked)} /> Socia
             </label>
             <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <input type="checkbox" checked={form.derecho_jugadora} onChange={e => upd("derecho_jugadora", e.target.checked)} /> Derecho de Jugadora
             </label>
-            <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <input type="checkbox" checked={form.activa} onChange={e => upd("activa", e.target.checked)} /> Activa
-            </label>
           </div>
+          <div>
+            <label style={labelSt}>Estado</label>
+            <select value={form.estado || "activa"} onChange={e => { upd("estado", e.target.value); upd("activa", e.target.value === "activa"); if (e.target.value === "baja") upd("fecha_baja", new Date().toISOString().slice(0, 10)); }} style={inputSt}>
+              <option value="activa">Activa</option>
+              <option value="suspendida">Suspendida</option>
+              <option value="baja">Baja</option>
+            </select>
+          </div>
+          {form.estado === "baja" && <>
+            <div><label style={labelSt}>Fecha de Baja</label><input type="date" value={form.fecha_baja || ""} onChange={e => upd("fecha_baja", e.target.value || null)} style={inputSt} /></div>
+            <div>
+              <label style={labelSt}>Motivo de Baja *</label>
+              <select value={form.motivo_baja || ""} onChange={e => upd("motivo_baja", e.target.value || null)} style={inputSt}>
+                <option value="">Seleccionar motivo...</option>
+                {MOTIVOS_BAJA.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+          </>}
+          <div><label style={labelSt}>Temporada</label><input value={form.temporada || "2026"} onChange={e => upd("temporada", e.target.value)} style={inputSt} /></div>
           <div>
             <label style={labelSt}>Cert. Médico Estado</label>
             <select value={form.cert_medico_estado} onChange={e => upd("cert_medico_estado", e.target.value)} style={inputSt}>

@@ -25,6 +25,15 @@ export function emptyJugadora(): Omit<JugadoraInsert, "division_efectiva"> {
     grupo_sanguineo: null,
     observaciones: null,
     activa: true,
+    estado: "activa",
+    fecha_alta: new Date().toISOString().slice(0, 10),
+    fecha_baja: null,
+    motivo_baja: null,
+    temporada: "2026",
+    contacto_tutor_nombre: null,
+    contacto_tutor_telefono: null,
+    contacto_tutor_email: null,
+    departamento: null,
   };
 }
 
@@ -42,7 +51,7 @@ export function isCertVencido(j: Jugadora): boolean {
 
 /** Can be added to LBF? */
 export function canAddToLBF(j: Jugadora): { ok: boolean; reason?: string } {
-  if (!j.activa) return { ok: false, reason: "Jugadora inactiva" };
+  if (j.estado !== "activa") return { ok: false, reason: j.estado === "suspendida" ? "Jugadora suspendida" : "Jugadora dada de baja" };
   if (!j.derecho_jugadora) return { ok: false, reason: "Sin derecho de jugadora" };
   if (isCertVencido(j)) return { ok: false, reason: "Certificado médico vencido o pendiente" };
   if (j.cert_medico_estado !== CERT_ST.VIG) return { ok: false, reason: "Certificado médico no vigente" };

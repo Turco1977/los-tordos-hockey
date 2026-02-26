@@ -53,6 +53,13 @@ export default function PlayerDetail({ jugadora: j, onEdit, onBack }: { jugadora
           {row("Tel. Emergencia", j.telefono_emergencia)}
           {row("Contacto Emergencia", j.contacto_emergencia)}
           {row("Dirección", j.direccion)}
+          {row("Departamento", j.departamento)}
+        </Card>
+        <Card>
+          <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv, marginBottom: 8 }}>Contacto Tutor</div>
+          {row("Nombre tutor", j.contacto_tutor_nombre)}
+          {row("Teléfono tutor", j.contacto_tutor_telefono)}
+          {row("Email tutor", j.contacto_tutor_email)}
         </Card>
         <Card>
           <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv, marginBottom: 8 }}>Administrativo</div>
@@ -64,7 +71,11 @@ export default function PlayerDetail({ jugadora: j, onEdit, onBack }: { jugadora
           </div>
           {row("Cert. Vencimiento", j.cert_medico_vencimiento)}
           {row("Obra Social", j.obra_social)}
-          {row("Estado", j.activa ? "Activa" : "Inactiva")}
+          {row("Estado", j.estado === "activa" ? "✅ Activa" : j.estado === "suspendida" ? "⚠️ Suspendida" : "❌ Baja")}
+          {j.fecha_alta && row("Fecha de Alta", j.fecha_alta)}
+          {j.estado === "baja" && row("Fecha de Baja", j.fecha_baja)}
+          {j.motivo_baja && row("Motivo de Baja", j.motivo_baja)}
+          {row("Temporada", j.temporada)}
         </Card>
         {j.observaciones && <Card><div style={{ fontSize: 12, fontWeight: 700, color: colors.nv, marginBottom: 8 }}>Observaciones</div><div style={{ fontSize: 12, color: colors.g5 }}>{j.observaciones}</div></Card>}
       </div>

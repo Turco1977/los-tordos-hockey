@@ -1,9 +1,9 @@
 "use client";
 import { useC } from "@/lib/theme-context";
-import { DIVISIONES, RAMAS, CERT_ST } from "@/lib/constants";
+import { DIVISIONES, RAMAS, CERT_ST, DEPARTAMENTOS } from "@/lib/constants";
 
-export interface Filters { q: string; division: string; rama: string; cert: string; activa: string }
-export const emptyFilters: Filters = { q: "", division: "", rama: "", cert: "", activa: "si" };
+export interface Filters { q: string; division: string; rama: string; cert: string; estado: string; departamento: string; derecho: string }
+export const emptyFilters: Filters = { q: "", division: "", rama: "", cert: "", estado: "activa", departamento: "", derecho: "" };
 
 export default function PlayerFilters({ filters, onChange }: { filters: Filters; onChange: (f: Filters) => void }) {
   const { colors, cardBg } = useC();
@@ -26,10 +26,20 @@ export default function PlayerFilters({ filters, onChange }: { filters: Filters;
         <option value={CERT_ST.VENC}>Vencido</option>
         <option value={CERT_ST.PEND}>Pendiente</option>
       </select>
-      <select value={filters.activa} onChange={e => onChange({ ...filters, activa: e.target.value })} style={s}>
-        <option value="si">Activas</option>
-        <option value="no">Inactivas</option>
+      <select value={filters.estado} onChange={e => onChange({ ...filters, estado: e.target.value })} style={s}>
+        <option value="activa">Activas</option>
+        <option value="suspendida">Suspendidas</option>
+        <option value="baja">Bajas</option>
         <option value="">Todas</option>
+      </select>
+      <select value={filters.derecho} onChange={e => onChange({ ...filters, derecho: e.target.value })} style={s}>
+        <option value="">Der. Jugadora</option>
+        <option value="si">Con derecho</option>
+        <option value="no">Sin derecho</option>
+      </select>
+      <select value={filters.departamento} onChange={e => onChange({ ...filters, departamento: e.target.value })} style={s}>
+        <option value="">Departamento</option>
+        {DEPARTAMENTOS.map(d => <option key={d} value={d}>{d}</option>)}
       </select>
     </div>
   );
