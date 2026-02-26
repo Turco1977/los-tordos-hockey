@@ -40,12 +40,14 @@ export default function Sidebar({ tab, onTab, userLevel, profile, onLogout, onTo
     <aside style={{ width: 220, minHeight: "100vh", background: "#0A1628", color: "#E2E8F0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
       <div style={{ padding: "24px 20px 16px", borderBottom: "1px solid #1E293B" }}>
         <div style={{ fontSize: 28, textAlign: "center" }}>🏑</div>
-        <div style={{ fontSize: 14, fontWeight: 800, textAlign: "center", marginTop: 4 }}>Los Tordos Hockey</div>
+        <div style={{ fontSize: 14, fontWeight: 800, textAlign: "center", marginTop: 4 }}>LOS TORDOS HOCKEY</div>
+        <div style={{ fontSize: 9, textAlign: "center", letterSpacing: 1, textTransform: "uppercase" as const, color: "#94A3B8", marginTop: 4 }}>Panel de Control</div>
         {roleMeta && <div style={{ fontSize: 10, textAlign: "center", color: "#94A3B8", marginTop: 4 }}>{roleMeta.i} {roleMeta.l}</div>}
       </div>
       <nav style={{ flex: 1, padding: "12px 10px" }}>
+        <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: 1, color: colors.g4, padding: "4px 12px 8px" }}>Navegación</div>
         {visibleTabs.map(t => (
-          <button key={t.id} onClick={() => onTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer", marginBottom: 4, fontSize: 13, fontWeight: tab === t.id ? 700 : 500, background: tab === t.id ? "#1E293B" : "transparent", color: tab === t.id ? "#fff" : "#94A3B8" }}>
+          <button key={t.id} onClick={() => onTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", borderLeft: tab === t.id ? "3px solid " + colors.bl : "3px solid transparent", cursor: "pointer", marginBottom: 4, fontSize: 13, fontWeight: tab === t.id ? 700 : 500, background: tab === t.id ? "rgba(255,255,255,.1)" : "transparent", color: tab === t.id ? "#fff" : "rgba(255,255,255,.55)" }}>
             <span style={{ fontSize: 16 }}>{t.i}</span>{t.l}
           </button>
         ))}
