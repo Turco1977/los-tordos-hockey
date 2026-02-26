@@ -168,11 +168,56 @@ export function calcDivision(fechaNac: string): Division | null {
   return "Primera";
 }
 
+/* ── Phase 2 Constants ── */
+export const TIPO_ACTIVIDAD = [
+  { k: "entrenamiento", l: "Entrenamiento", i: "🏋️" },
+  { k: "partido", l: "Partido", i: "⚽" },
+  { k: "amistoso", l: "Amistoso", i: "🤝" },
+  { k: "torneo", l: "Torneo", i: "🏆" },
+  { k: "evaluacion", l: "Evaluación", i: "📝" },
+  { k: "gimnasio", l: "Gimnasio", i: "💪" },
+] as const;
+
+export const COMPETENCIA_TIPOS = [
+  { k: "ahl", l: "AHL" },
+  { k: "metropolitano", l: "Metropolitano" },
+  { k: "torneo_local", l: "Torneo Local" },
+  { k: "amistoso", l: "Amistoso" },
+  { k: "nacional", l: "Nacional" },
+  { k: "otro", l: "Otro" },
+] as const;
+
+export const EVENTO_TIPOS = [
+  { k: "gol", l: "Gol", i: "⚽", c: "#10B981" },
+  { k: "amarilla", l: "Amarilla", i: "🟡", c: "#F59E0B" },
+  { k: "roja", l: "Roja", i: "🔴", c: "#DC2626" },
+  { k: "green_card", l: "Green Card", i: "🟢", c: "#059669" },
+  { k: "penal", l: "Penal", i: "🥅", c: "#8B5CF6" },
+] as const;
+
+export const CALENDARIO_TIPOS = [
+  { k: "entrenamiento", l: "Entrenamiento", c: "#3B82F6" },
+  { k: "partido", l: "Partido", c: "#C8102E" },
+  { k: "torneo", l: "Torneo", c: "#8B5CF6" },
+  { k: "evaluacion", l: "Evaluación", c: "#F59E0B" },
+  { k: "reunion", l: "Reunión", c: "#10B981" },
+  { k: "otro", l: "Otro", c: "#6B7280" },
+] as const;
+
+export const RESULTADO_COLORS: Record<string, { bg: string; c: string }> = {
+  V: { bg: "#D1FAE5", c: "#065F46" },
+  D: { bg: "#FEE2E2", c: "#991B1B" },
+  E: { bg: "#FEF3C7", c: "#92400E" },
+};
+
 /* ── Tabs ── */
 export const TABS = [
   { id: "dashboard", l: "Dashboard", i: "📊", minLv: 1 },
   { id: "padron", l: "Padrón", i: "👥", minLv: 3 },
   { id: "lbf", l: "Lista de Buena Fe", i: "📋", minLv: 3 },
   { id: "organigrama", l: "Organigrama", i: "🏗️", minLv: 3 },
+  { id: "asistencia", l: "Asistencia", i: "🏑", minLv: 3 },
+  { id: "partidos", l: "Partidos", i: "⚽", minLv: 3 },
+  { id: "calendario", l: "Calendario", i: "📅", minLv: 3 },
 ] as const;
 export type TabId = typeof TABS[number]["id"];

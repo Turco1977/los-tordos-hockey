@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Jugadora, HockeyRole, LBF, LBFJugadora, Profile } from "@/lib/supabase/types";
+import type { Jugadora, HockeyRole, LBF, LBFJugadora, Profile, AsistenciaSesion, AsistenciaRegistro, Partido, PartidoConvocada, PartidoEvento, CalendarioEvento } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/client";
 
 interface HockeyStore {
@@ -27,6 +27,27 @@ interface HockeyStore {
   staff: HockeyRole[];
   staffLoading: boolean;
   fetchStaff: () => Promise<void>;
+
+  /* Phase 2: Asistencia */
+  sesiones: AsistenciaSesion[];
+  registros: AsistenciaRegistro[];
+  fetchSesiones: () => Promise<void>;
+  setSesiones: (fn: (prev: AsistenciaSesion[]) => AsistenciaSesion[]) => void;
+  setRegistros: (fn: (prev: AsistenciaRegistro[]) => AsistenciaRegistro[]) => void;
+
+  /* Phase 2: Partidos */
+  partidos: Partido[];
+  convocadas: PartidoConvocada[];
+  eventos: PartidoEvento[];
+  fetchPartidos: () => Promise<void>;
+  setPartidos: (fn: (prev: Partido[]) => Partido[]) => void;
+  setConvocadas: (fn: (prev: PartidoConvocada[]) => PartidoConvocada[]) => void;
+  setEventos: (fn: (prev: PartidoEvento[]) => PartidoEvento[]) => void;
+
+  /* Phase 2: Calendario */
+  calEventos: CalendarioEvento[];
+  fetchCalEventos: () => Promise<void>;
+  setCalEventos: (fn: (prev: CalendarioEvento[]) => CalendarioEvento[]) => void;
 }
 
 export const useStore = create<HockeyStore>((set, get) => ({
@@ -65,4 +86,37 @@ export const useStore = create<HockeyStore>((set, get) => ({
     const { data } = await sb.from("hockey_roles").select("*, profile:profiles(*)").eq("active", true).order("role");
     set({ staff: (data || []) as HockeyRole[], staffLoading: false });
   },
+
+  /* Phase 2: Asistencia */
+  sesiones: [],
+  registros: [],
+  fetchSesiones: async () => {
+    const sb = createClient();
+    const { data } = await sb.from("asistencia_sesiones").select("*").order("fecha", { ascending: false }).limit(100);
+    set({ sesiones: (data || []) as AsistenciaSesion[] });
+  },
+  setSesiones: (fn) => set((s) => ({ sesiones: fn(s.sesiones) })),
+  setRegistros: (fn) => set((s) => ({ registros: fn(s.registros) })),
+
+  /* Phase 2: Partidos */
+  partidos: [],
+  convocadas: [],
+  eventos: [],
+  fetchPartidos: async () => {
+    const sb = createClient();
+    const { data } = await sb.from("partidos").select("*").order("fecha", { ascending: false }).limit(100);
+    set({ partidos: (data || []) as Partido[] });
+  },
+  setPartidos: (fn) => set((s) => ({ partidos: fn(s.partidos) })),
+  setConvocadas: (fn) => set((s) => ({ convocadas: fn(s.convocadas) })),
+  setEventos: (fn) => set((s) => ({ eventos: fn(s.eventos) })),
+
+  /* Phase 2: Calendario */
+  calEventos: [],
+  fetchCalEventos: async () => {
+    const sb = createClient();
+    const { data } = await sb.from("calendario_eventos").select("*").order("fecha", { ascending: true }).limit(200);
+    set({ calEventos: (data || []) as CalendarioEvento[] });
+  },
+  setCalEventos: (fn) => set((s) => ({ calEventos: fn(s.calEventos) })),
 }));

@@ -98,3 +98,79 @@ export interface JugadoraHistorial {
   created_at: string;
   profile?: Profile;
 }
+
+/* ── Phase 2: Asistencia + Partidos + Calendario ── */
+export interface AsistenciaSesion {
+  id: string;
+  fecha: string;
+  division: string;
+  rama: string;
+  tipo_actividad: string;
+  qr_token: string | null;
+  qr_expires_at: string | null;
+  estado: "abierta" | "cerrada";
+  notas: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+export interface AsistenciaRegistro {
+  id: string;
+  sesion_id: string;
+  jugadora_id: string;
+  presente: boolean;
+  metodo: "manual" | "qr";
+  hora: string | null;
+  created_at: string;
+}
+
+export interface Partido {
+  id: string;
+  fecha: string;
+  rival: string;
+  sede: string;
+  division: string;
+  rama: string;
+  competencia: string;
+  goles_favor: number;
+  goles_contra: number;
+  resultado: "V" | "D" | "E" | null;
+  notas: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+export interface PartidoConvocada {
+  id: string;
+  partido_id: string;
+  jugadora_id: string;
+  titular: boolean;
+  created_at: string;
+}
+
+export interface PartidoEvento {
+  id: string;
+  partido_id: string;
+  jugadora_id: string;
+  tipo: string;
+  minuto: number | null;
+  notas: string | null;
+  created_at: string;
+}
+
+export interface CalendarioEvento {
+  id: string;
+  titulo: string;
+  fecha: string;
+  hora: string | null;
+  tipo: string;
+  division: string | null;
+  rama: string | null;
+  descripcion: string | null;
+  recurrencia: string | null;
+  recurrencia_fin: string | null;
+  sesion_id: string | null;
+  partido_id: string | null;
+  created_by: string;
+  created_at: string;
+}

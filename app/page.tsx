@@ -19,6 +19,9 @@ import PlayerDetail from "@/components/main/PlayerDetail";
 import LBFManager from "@/components/main/LBFManager";
 import LBFSummary from "@/components/main/LBFSummary";
 import Organigrama from "@/components/main/Organigrama";
+import AsistenciaManager from "@/components/main/AsistenciaManager";
+import PartidosManager from "@/components/main/PartidosManager";
+import HockeyCalendario from "@/components/main/HockeyCalendario";
 import type { Jugadora } from "@/lib/supabase/types";
 
 export default function Page() {
@@ -35,13 +38,13 @@ export default function Page() {
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" } | null>(null);
 
   const store = useStore();
-  const { user, profile, roles, activeRole, setUser, setProfile, setRoles, setActiveRole, jugadoras, lbfs, fetchJugadoras, fetchLBFs } = store;
+  const { user, profile, roles, activeRole, setUser, setProfile, setRoles, setActiveRole, jugadoras, lbfs, fetchJugadoras, fetchLBFs, fetchSesiones, fetchPartidos, fetchCalEventos } = store;
 
   const userLevel = maxLevel(roles);
 
   const loadData = useCallback(async () => {
-    await Promise.all([fetchJugadoras(), fetchLBFs()]);
-  }, [fetchJugadoras, fetchLBFs]);
+    await Promise.all([fetchJugadoras(), fetchLBFs(), fetchSesiones(), fetchPartidos(), fetchCalEventos()]);
+  }, [fetchJugadoras, fetchLBFs, fetchSesiones, fetchPartidos, fetchCalEventos]);
 
   // Auth check
   useEffect(() => {
@@ -65,6 +68,9 @@ export default function Page() {
     const ch = sb.channel("hockey-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "jugadoras" }, () => fetchJugadoras())
       .on("postgres_changes", { event: "*", schema: "public", table: "lbf" }, () => fetchLBFs())
+      .on("postgres_changes", { event: "*", schema: "public", table: "asistencia_sesiones" }, () => fetchSesiones())
+      .on("postgres_changes", { event: "*", schema: "public", table: "partidos" }, () => fetchPartidos())
+      .on("postgres_changes", { event: "*", schema: "public", table: "calendario_eventos" }, () => fetchCalEventos())
       .subscribe();
     return () => { sb.removeChannel(ch); };
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -207,6 +213,12 @@ export default function Page() {
         );
       case "organigrama":
         return <Organigrama />;
+      case "asistencia":
+        return <AsistenciaManager user={user} mob={mob} showT={(msg: string, type?: "ok" | "err") => setToast({ msg, type: type || "ok" })} />;
+      case "partidos":
+        return <PartidosManager user={user} mob={mob} showT={(msg: string, type?: "ok" | "err") => setToast({ msg, type: type || "ok" })} />;
+      case "calendario":
+        return <HockeyCalendario user={user} mob={mob} showT={(msg: string, type?: "ok" | "err") => setToast({ msg, type: type || "ok" })} onNavAsist={() => setTab("asistencia" as TabId)} onNavPartido={() => setTab("partidos" as TabId)} />;
       default:
         return null;
     }
