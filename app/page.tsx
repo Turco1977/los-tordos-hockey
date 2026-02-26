@@ -18,6 +18,7 @@ import PlayerForm from "@/components/main/PlayerForm";
 import PlayerDetail from "@/components/main/PlayerDetail";
 import LBFManager from "@/components/main/LBFManager";
 import LBFSummary from "@/components/main/LBFSummary";
+import Planteles from "@/components/main/Planteles";
 import Organigrama from "@/components/main/Organigrama";
 import AsistenciaManager from "@/components/main/AsistenciaManager";
 import PartidosManager from "@/components/main/PartidosManager";
@@ -204,6 +205,8 @@ export default function Page() {
         if (playerView === "form" && selPlayer) return <PlayerForm jugadora={selPlayer} onSave={savePlayer} onCancel={() => setPlayerView("detail")} saving={saving} />;
         if (playerView === "detail" && selPlayer) return <PlayerDetail jugadora={selPlayer} onEdit={() => setPlayerView("form")} onBack={() => { setPlayerView("list"); setSelPlayer(null); }} userLevel={userLevel} />;
         return <PlayerRegistry jugadoras={jugadoras} onSelect={j => { setSelPlayer(j); setPlayerView("detail"); }} onNew={() => { setSelPlayer(null); setPlayerView("new"); }} onDel={delJugadoras} onBulk={bulkUpload} userLevel={userLevel} />;
+      case "planteles":
+        return <Planteles jugadoras={jugadoras} lbfs={lbfs} partidos={store.partidos} />;
       case "lbf":
         return (
           <>
