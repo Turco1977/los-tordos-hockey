@@ -148,10 +148,10 @@ export default function Planteles({ jugadoras, lbfs, partidos, onSelect }: { jug
                   <span style={{ color: colors.gn }}>🟢{s.goles}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 10, background: isDark ? "rgba(255,255,255,.08)" : colors.g1, color: colors.g5, fontWeight: 600 }}>
+                  <span style={{ fontSize: 12, padding: "2px 10px", borderRadius: 10, background: isDark ? "rgba(255,255,255,.08)" : colors.g1, color: colors.nv, fontWeight: 700 }}>
                     {s.partidos}/{s.totalPartidos} PJ
                   </span>
-                  {s.enLBF && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 10, background: "#DCFCE7", color: "#166534", fontWeight: 600 }}>LBF</span>}
+                  {s.enLBF && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "#DCFCE7", color: "#166534", fontWeight: 700 }}>LBF</span>}
                 </div>
               </div>
             );
