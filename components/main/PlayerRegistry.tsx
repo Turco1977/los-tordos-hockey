@@ -58,6 +58,11 @@ export default function PlayerRegistry({ jugadoras, onSelect, onNew, onDel, onBu
         </div>
       </div>
       <PlayerFilters filters={filters} onChange={f => { setFilters(f); setPage(1); }} />
+      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: colors.rd, display: "inline-block" }} /><span style={{ fontSize: 10, color: colors.g5, fontWeight: 600 }}>Apto Médico</span></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: colors.yl, display: "inline-block" }} /><span style={{ fontSize: 10, color: colors.g5, fontWeight: 600 }}>Derecho Jugadora</span></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: colors.gn, display: "inline-block" }} /><span style={{ fontSize: 10, color: colors.g5, fontWeight: 600 }}>Cuota Vigente</span></div>
+      </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
         <span style={{ fontSize: 11, color: colors.g4 }}>{filtered.length} jugadora{filtered.length !== 1 ? "s" : ""}</span>
         {selMode && <>
