@@ -19,7 +19,7 @@ interface PlayerStats {
   enLBF: boolean;
 }
 
-export default function Planteles({ jugadoras, lbfs, partidos }: { jugadoras: Jugadora[]; lbfs: LBF[]; partidos: Partido[] }) {
+export default function Planteles({ jugadoras, lbfs, partidos, onSelect }: { jugadoras: Jugadora[]; lbfs: LBF[]; partidos: Partido[]; onSelect: (j: Jugadora) => void }) {
   const { colors, cardBg, isDark } = useC();
   const mob = useMobile();
   const [division, setDivision] = useState<string>(DIVISIONES[0]);
@@ -29,7 +29,6 @@ export default function Planteles({ jugadoras, lbfs, partidos }: { jugadoras: Ju
   const [lbfJugadoraIds, setLbfJugadoraIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
-  // Fetch eventos + convocadas + LBF jugadoras for the selected division+rama
   useEffect(() => {
     setLoading(true);
     const sb = createClient();
@@ -49,7 +48,6 @@ export default function Planteles({ jugadoras, lbfs, partidos }: { jugadoras: Ju
         setConvocadas([]);
       }
 
-      // Get jugadora IDs in approved LBFs for this division+rama
       const approvedLbfs = lbfs.filter(l => l.estado === LBF_ST.APR && l.division === division && l.rama === rama);
       if (approvedLbfs.length > 0) {
         const { data } = await sb.from("lbf_jugadoras").select("jugadora_id").in("lbf_id", approvedLbfs.map(l => l.id));
@@ -63,7 +61,6 @@ export default function Planteles({ jugadoras, lbfs, partidos }: { jugadoras: Ju
     fetchAll();
   }, [division, rama, partidos, lbfs]);
 
-  // Calculate stats per player
   const stats: PlayerStats[] = useMemo(() => {
     const teamPlayers = jugadoras.filter(j =>
       (j.division_efectiva || j.division_manual) === division &&
@@ -121,12 +118,13 @@ export default function Planteles({ jugadoras, lbfs, partidos }: { jugadoras: Ju
             const pct = s.totalPartidos > 0 ? Math.round((s.partidos / s.totalPartidos) * 100) : 0;
             const ringColor = pct >= 70 ? colors.gn : pct >= 30 ? ramaColor : colors.rd;
             return (
-              <div key={s.j.id} style={{
+              <div key={s.j.id} onClick={() => onSelect(s.j)} style={{
                 background: cardBg,
                 borderRadius: 16,
                 padding: mob ? "14px 10px" : "20px 16px",
                 textAlign: "center",
                 border: "1px solid " + colors.g2,
+                cursor: "pointer",
               }}>
                 <div style={{ display: "flex", justifyContent: "center" }}>
                   <Ring pct={pct} color={ringColor} size={mob ? 80 : 100} icon="🏑"

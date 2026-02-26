@@ -206,7 +206,9 @@ export default function Page() {
         if (playerView === "detail" && selPlayer) return <PlayerDetail jugadora={selPlayer} onEdit={() => setPlayerView("form")} onBack={() => { setPlayerView("list"); setSelPlayer(null); }} userLevel={userLevel} />;
         return <PlayerRegistry jugadoras={jugadoras} onSelect={j => { setSelPlayer(j); setPlayerView("detail"); }} onNew={() => { setSelPlayer(null); setPlayerView("new"); }} onDel={delJugadoras} onBulk={bulkUpload} userLevel={userLevel} />;
       case "planteles":
-        return <Planteles jugadoras={jugadoras} lbfs={lbfs} partidos={store.partidos} />;
+        if (playerView === "detail" && selPlayer) return <PlayerDetail jugadora={selPlayer} onEdit={() => setPlayerView("form")} onBack={() => { setPlayerView("list"); setSelPlayer(null); }} userLevel={userLevel} />;
+        if (playerView === "form" && selPlayer) return <PlayerForm jugadora={selPlayer} onSave={savePlayer} onCancel={() => setPlayerView("detail")} saving={saving} />;
+        return <Planteles jugadoras={jugadoras} lbfs={lbfs} partidos={store.partidos} onSelect={j => { setSelPlayer(j); setPlayerView("detail"); }} />;
       case "lbf":
         return (
           <>
