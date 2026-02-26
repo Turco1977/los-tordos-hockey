@@ -105,6 +105,11 @@ export default function Planteles({ jugadoras, lbfs, partidos, onSelect }: { jug
         </select>
         <span style={{ fontSize: 11, color: colors.g4 }}>{stats.length} jugadora{stats.length !== 1 ? "s" : ""} · {totalPartidos} partido{totalPartidos !== 1 ? "s" : ""}</span>
       </div>
+      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: colors.rd, display: "inline-block" }} /><span style={{ fontSize: 10, color: colors.g5, fontWeight: 600 }}>Tarjetas Rojas</span></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: colors.yl, display: "inline-block" }} /><span style={{ fontSize: 10, color: colors.g5, fontWeight: 600 }}>Tarjetas Amarillas</span></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: colors.gn, display: "inline-block" }} /><span style={{ fontSize: 10, color: colors.g5, fontWeight: 600 }}>Goles</span></div>
+      </div>
 
       {loading ? <Spinner size={32} /> : stats.length === 0 ? (
         <Card style={{ textAlign: "center", padding: 32 }}>
