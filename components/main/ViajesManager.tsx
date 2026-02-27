@@ -7,6 +7,7 @@ import { canAddToViaje, fullName } from "@/lib/mappers";
 import { createClient } from "@/lib/supabase/client";
 import { paginate } from "@/lib/pagination";
 import type { Jugadora, Viaje, ViajeJugadora, ViajeStaff, ViajeHistorial, HockeyRole } from "@/lib/supabase/types";
+import ViajeChecklist from "./ViajeChecklist";
 
 type View = "list" | "new" | "detail";
 const fmtDate = (d: string) => { if (!d) return "–"; const p = d.split("-"); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d; };
@@ -25,9 +26,11 @@ export default function ViajesManager({ jugadoras, viajes, userId, userLevel, on
   const [form, setForm] = useState({ destino: "", fecha_ida: "", fecha_vuelta: "", motivo: "torneo", costo_transporte: 0, costo_alojamiento: 0, costo_alimentacion: 0, costo_otros: 0, notas: "" });
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(1);
+  const [showChecklist, setShowChecklist] = useState(false);
 
   const openDetail = async (v: Viaje) => {
     setSelViaje(v);
+    setShowChecklist(false);
     const [pRes, sRes, hRes] = await Promise.all([
       sb.from("viaje_jugadoras").select("*, jugadora:jugadoras(*)").eq("viaje_id", v.id).order("created_at"),
       sb.from("viaje_staff").select("*, profile:profiles(*)").eq("viaje_id", v.id).order("created_at"),
@@ -149,7 +152,7 @@ export default function ViajesManager({ jugadoras, viajes, userId, userLevel, on
 
     return (
       <div>
-        <button onClick={() => { setView("list"); setSelViaje(null); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: colors.bl, fontWeight: 600, padding: 0, marginBottom: 8 }}>← Volver</button>
+        <button onClick={() => { setView("list"); setSelViaje(null); setShowChecklist(false); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: colors.bl, fontWeight: 600, padding: 0, marginBottom: 8 }}>← Volver</button>
 
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
@@ -159,12 +162,16 @@ export default function ViajesManager({ jugadoras, viajes, userId, userLevel, on
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             <Badge s={selViaje.estado} />
+            <Btn s="s" v={showChecklist ? "g" : "w"} onClick={() => setShowChecklist(!showChecklist)}>📋 {showChecklist ? "Ocultar Checklist" : "Checklist"}</Btn>
             {editable && <Btn s="s" v="w" onClick={() => updateEstado("pendiente")}>Enviar a Aprobación</Btn>}
             {selViaje.estado === VIAJE_ST.PEND && userLevel <= 2 && <Btn s="s" v="s" onClick={() => updateEstado("aprobado")}>Aprobar</Btn>}
             {selViaje.estado === VIAJE_ST.PEND && userLevel <= 2 && <Btn s="s" v="r" onClick={() => updateEstado("cancelado")}>Cancelar</Btn>}
             {userLevel <= 3 && <Btn s="s" v="r" onClick={deleteViaje}>🗑 Eliminar</Btn>}
           </div>
         </div>
+
+        {/* Checklist */}
+        {showChecklist && <ViajeChecklist viajeId={selViaje.id} />}
 
         {/* Costos card */}
         <Card style={{ marginBottom: 14 }}>
