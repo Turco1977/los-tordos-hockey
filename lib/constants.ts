@@ -229,12 +229,28 @@ export const RESULTADO_COLORS: Record<string, { bg: string; c: string }> = {
   E: { bg: "#FEF3C7", c: "#92400E" },
 };
 
+/* ── Viajes Status ── */
+export const VIAJE_ST = { BORR: "borrador", PEND: "pendiente", APR: "aprobado", CANC: "cancelado" } as const;
+export type ViajeStatus = typeof VIAJE_ST[keyof typeof VIAJE_ST];
+export const VIAJE_SC: Record<string,{l:string;c:string;bg:string;i:string}> = {
+  [VIAJE_ST.BORR]: { l: "Borrador", c: T.g5, bg: "#F3F4F6", i: "📝" },
+  [VIAJE_ST.PEND]: { l: "Pendiente", c: T.yl, bg: "#FEF3C7", i: "🟡" },
+  [VIAJE_ST.APR]:  { l: "Aprobado", c: T.gn, bg: "#D1FAE5", i: "✅" },
+  [VIAJE_ST.CANC]: { l: "Cancelado", c: T.rd, bg: "#FEE2E2", i: "❌" },
+};
+export const VIAJE_MOTIVOS = [
+  { k: "torneo", l: "Torneo", i: "🏆" },
+  { k: "amistoso", l: "Amistoso", i: "🤝" },
+  { k: "gira", l: "Gira", i: "🌍" },
+] as const;
+
 /* ── Tabs ── */
 export const TABS = [
   { id: "dashboard", l: "Dashboard", i: "📊", minLv: 1 },
   { id: "padron", l: "Padrón", i: "👥", minLv: 3 },
   { id: "planteles", l: "Planteles", i: "🏅", minLv: 3 },
   { id: "lbf", l: "Lista de Buena Fe", i: "📋", minLv: 3 },
+  { id: "viajes", l: "Viajes", i: "🚌", minLv: 3 },
   { id: "organigrama", l: "Organigrama", i: "🏗️", minLv: 3 },
   { id: "asistencia", l: "Asistencia", i: "🏑", minLv: 3 },
   { id: "partidos", l: "Partidos", i: "⚽", minLv: 3 },

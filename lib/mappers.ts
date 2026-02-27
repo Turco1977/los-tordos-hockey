@@ -58,6 +58,15 @@ export function canAddToLBF(j: Jugadora): { ok: boolean; reason?: string } {
   return { ok: true };
 }
 
+/** Can be added to Viaje? (same blocking rules as LBF) */
+export function canAddToViaje(j: Jugadora): { ok: boolean; reason?: string } {
+  if (j.estado !== "activa") return { ok: false, reason: j.estado === "suspendida" ? "Jugadora suspendida" : "Jugadora dada de baja" };
+  if (!j.derecho_jugadora) return { ok: false, reason: "Sin derecho de jugadora" };
+  if (isCertVencido(j)) return { ok: false, reason: "Certificado médico vencido o pendiente" };
+  if (j.cert_medico_estado !== CERT_ST.VIG) return { ok: false, reason: "Certificado médico no vigente" };
+  return { ok: true };
+}
+
 /** Full name */
 export function fullName(j: Jugadora): string {
   return `${j.apellido}, ${j.nombre}`;

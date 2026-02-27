@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Jugadora, HockeyRole, LBF, LBFJugadora, Profile, AsistenciaSesion, AsistenciaRegistro, Partido, PartidoConvocada, PartidoEvento, CalendarioEvento } from "@/lib/supabase/types";
+import type { Jugadora, HockeyRole, LBF, LBFJugadora, Profile, AsistenciaSesion, AsistenciaRegistro, Partido, PartidoConvocada, PartidoEvento, CalendarioEvento, Viaje } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/client";
 
 interface HockeyStore {
@@ -48,6 +48,12 @@ interface HockeyStore {
   calEventos: CalendarioEvento[];
   fetchCalEventos: () => Promise<void>;
   setCalEventos: (fn: (prev: CalendarioEvento[]) => CalendarioEvento[]) => void;
+
+  /* Phase 3: Viajes */
+  viajes: Viaje[];
+  viajesLoading: boolean;
+  fetchViajes: () => Promise<void>;
+  setViajes: (fn: (prev: Viaje[]) => Viaje[]) => void;
 }
 
 export const useStore = create<HockeyStore>((set, get) => ({
@@ -119,4 +125,15 @@ export const useStore = create<HockeyStore>((set, get) => ({
     set({ calEventos: (data || []) as CalendarioEvento[] });
   },
   setCalEventos: (fn) => set((s) => ({ calEventos: fn(s.calEventos) })),
+
+  /* Phase 3: Viajes */
+  viajes: [],
+  viajesLoading: false,
+  fetchViajes: async () => {
+    set({ viajesLoading: true });
+    const sb = createClient();
+    const { data } = await sb.from("viajes").select("*").order("created_at", { ascending: false });
+    set({ viajes: (data || []) as Viaje[], viajesLoading: false });
+  },
+  setViajes: (fn) => set((s) => ({ viajes: fn(s.viajes) })),
 }));

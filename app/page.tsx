@@ -23,6 +23,7 @@ import Organigrama from "@/components/main/Organigrama";
 import AsistenciaManager from "@/components/main/AsistenciaManager";
 import PartidosManager from "@/components/main/PartidosManager";
 import HockeyCalendario from "@/components/main/HockeyCalendario";
+import ViajesManager from "@/components/main/ViajesManager";
 import type { Jugadora } from "@/lib/supabase/types";
 
 export default function Page() {
@@ -39,13 +40,13 @@ export default function Page() {
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" } | null>(null);
 
   const store = useStore();
-  const { user, profile, roles, activeRole, setUser, setProfile, setRoles, setActiveRole, jugadoras, lbfs, fetchJugadoras, fetchLBFs, fetchSesiones, fetchPartidos, fetchCalEventos } = store;
+  const { user, profile, roles, activeRole, setUser, setProfile, setRoles, setActiveRole, jugadoras, lbfs, fetchJugadoras, fetchLBFs, fetchSesiones, fetchPartidos, fetchCalEventos, viajes, fetchViajes, fetchStaff } = store;
 
   const userLevel = maxLevel(roles);
 
   const loadData = useCallback(async () => {
-    await Promise.all([fetchJugadoras(), fetchLBFs(), fetchSesiones(), fetchPartidos(), fetchCalEventos()]);
-  }, [fetchJugadoras, fetchLBFs, fetchSesiones, fetchPartidos, fetchCalEventos]);
+    await Promise.all([fetchJugadoras(), fetchLBFs(), fetchSesiones(), fetchPartidos(), fetchCalEventos(), fetchViajes(), fetchStaff()]);
+  }, [fetchJugadoras, fetchLBFs, fetchSesiones, fetchPartidos, fetchCalEventos, fetchViajes, fetchStaff]);
 
   // Auth check
   useEffect(() => {
@@ -72,6 +73,7 @@ export default function Page() {
       .on("postgres_changes", { event: "*", schema: "public", table: "asistencia_sesiones" }, () => fetchSesiones())
       .on("postgres_changes", { event: "*", schema: "public", table: "partidos" }, () => fetchPartidos())
       .on("postgres_changes", { event: "*", schema: "public", table: "calendario_eventos" }, () => fetchCalEventos())
+      .on("postgres_changes", { event: "*", schema: "public", table: "viajes" }, () => fetchViajes())
       .subscribe();
     return () => { sb.removeChannel(ch); };
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -216,6 +218,8 @@ export default function Page() {
             <LBFManager jugadoras={jugadoras} lbfs={lbfs} userId={user.id} userLevel={userLevel} onRefresh={fetchLBFs} />
           </>
         );
+      case "viajes":
+        return <ViajesManager jugadoras={jugadoras} viajes={viajes} userId={user.id} userLevel={userLevel} onRefresh={fetchViajes} staff={store.staff} />;
       case "organigrama":
         return <Organigrama />;
       case "asistencia":

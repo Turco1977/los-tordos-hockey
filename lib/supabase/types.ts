@@ -185,3 +185,53 @@ export interface CalendarioEvento {
   created_by: string;
   created_at: string;
 }
+
+/* ── Phase 3: Viajes ── */
+export type ViajeEstado = "borrador" | "pendiente" | "aprobado" | "cancelado";
+export type ViajeMotivo = "torneo" | "amistoso" | "gira";
+
+export interface Viaje {
+  id: string;
+  destino: string;
+  fecha_ida: string;
+  fecha_vuelta: string;
+  motivo: ViajeMotivo;
+  costo_transporte: number;
+  costo_alojamiento: number;
+  costo_alimentacion: number;
+  costo_otros: number;
+  estado: ViajeEstado;
+  notas: string | null;
+  creado_por: string;
+  aprobado_por: string | null;
+  aprobado_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ViajeJugadora {
+  id: string;
+  viaje_id: string;
+  jugadora_id: string;
+  created_at: string;
+  jugadora?: Jugadora;
+}
+
+export interface ViajeStaff {
+  id: string;
+  viaje_id: string;
+  user_id: string;
+  rol: string;
+  created_at: string;
+  profile?: Profile;
+}
+
+export interface ViajeHistorial {
+  id: string;
+  viaje_id: string;
+  accion: string;
+  detalle: string | null;
+  user_id: string;
+  created_at: string;
+  profile?: Profile;
+}
