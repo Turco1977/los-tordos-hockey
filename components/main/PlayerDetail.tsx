@@ -5,7 +5,7 @@ import { Card, Btn, CertBadge, Spinner, useMobile } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import type { Jugadora, JugadoraHistorial } from "@/lib/supabase/types";
 
-interface Acumulados { goles: number; amarillas: number; rojas: number; greenCards: number; partidos: number; enLBF: boolean }
+interface Acumulados { goles: number; amarillas: number; rojas: number; greenCards: number; partidos: number; enLBF: boolean; asistencia: number; totalSesiones: number }
 
 export default function PlayerDetail({ jugadora: j, onEdit, onBack }: { jugadora: Jugadora; onEdit: () => void; onBack: () => void; userLevel: number }) {
   const { colors, cardBg, isDark } = useC();
@@ -24,10 +24,13 @@ export default function PlayerDetail({ jugadora: j, onEdit, onBack }: { jugadora
     });
     // Acumulados: eventos + convocadas + LBF
     const fetchAcum = async () => {
-      const [evRes, coRes, lbfRes] = await Promise.all([
+      const div = j.division_efectiva || j.division_manual || "";
+      const [evRes, coRes, lbfRes, asistRes, sesRes] = await Promise.all([
         sb.from("partido_eventos").select("tipo").eq("jugadora_id", j.id),
         sb.from("partido_convocadas").select("id").eq("jugadora_id", j.id),
         sb.from("lbf_jugadoras").select("lbf_id, lbf:lbf(estado)").eq("jugadora_id", j.id),
+        sb.from("asistencia_registros").select("id").eq("jugadora_id", j.id).eq("presente", true),
+        sb.from("asistencia_sesiones").select("id").eq("division", div).eq("rama", j.rama),
       ]);
       const evs = evRes.data || [];
       const enLBF = (lbfRes.data || []).some((x: any) => x.lbf?.estado === "aprobada");
@@ -38,6 +41,8 @@ export default function PlayerDetail({ jugadora: j, onEdit, onBack }: { jugadora
         greenCards: evs.filter((e: any) => e.tipo === "green_card").length,
         partidos: (coRes.data || []).length,
         enLBF,
+        asistencia: (asistRes.data || []).length,
+        totalSesiones: (sesRes.data || []).length,
       });
       setLoadingA(false);
     };
@@ -73,12 +78,23 @@ export default function PlayerDetail({ jugadora: j, onEdit, onBack }: { jugadora
       <Card style={{ marginBottom: 14, padding: mob ? "10px 12px" : "14px 16px" }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv, marginBottom: 10 }}>Acumulados Deportivos</div>
         {loadingA ? <Spinner size={20} /> : acum ? (
-          <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(3, 1fr)" : "repeat(6, 1fr)", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(4, 1fr)" : "repeat(8, 1fr)", gap: 8 }}>
             {statBox("Partidos", acum.partidos, "🏑", colors.bl)}
             {statBox("Goles", acum.goles, "⚽", colors.gn)}
             {statBox("Amarillas", acum.amarillas, "🟡", colors.yl)}
             {statBox("Rojas", acum.rojas, "🔴", colors.rd)}
             {statBox("Green Cards", acum.greenCards, "🟢", "#059669")}
+            {(() => {
+              const aPct = acum.totalSesiones > 0 ? Math.round((acum.asistencia / acum.totalSesiones) * 100) : 0;
+              return (
+                <div style={{ textAlign: "center", padding: mob ? "10px 8px" : "14px 12px", background: aPct < 50 ? (isDark ? "rgba(220,38,38,.15)" : "#FEF2F2") : (isDark ? "rgba(255,255,255,.04)" : colors.g1), borderRadius: 10 }}>
+                  <div style={{ fontSize: 10, marginBottom: 2 }}>📋</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: aPct >= 70 ? colors.gn : aPct >= 50 ? colors.yl : colors.rd }}>{aPct}%</div>
+                  <div style={{ fontSize: 9, color: colors.g5, fontWeight: 600 }}>Asistencia</div>
+                  <div style={{ fontSize: 8, color: colors.g4 }}>{acum.asistencia}/{acum.totalSesiones}</div>
+                </div>
+              );
+            })()}
             <div style={{ textAlign: "center", padding: mob ? "10px 8px" : "14px 12px", background: acum.enLBF ? "#D1FAE5" : (isDark ? "rgba(255,255,255,.04)" : colors.g1), borderRadius: 10 }}>
               <div style={{ fontSize: 10, marginBottom: 2 }}>📋</div>
               <div style={{ fontSize: 16, fontWeight: 800, color: acum.enLBF ? "#166534" : colors.g4 }}>{acum.enLBF ? "SI" : "NO"}</div>

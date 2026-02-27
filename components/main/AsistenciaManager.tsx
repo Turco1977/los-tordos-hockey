@@ -1,13 +1,16 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { DIVISIONES, RAMAS, TIPO_ACTIVIDAD } from "@/lib/constants";
 import { Btn, Card, Ring } from "@/components/ui";
 import { useC } from "@/lib/theme-context";
 import { useStore } from "@/lib/store";
+import { createClient } from "@/lib/supabase/client";
 import QRCode from "qrcode";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 const fmtD = (d: string) => { if (!d) return "–"; const p = d.slice(0, 10).split("-"); return p[2] + "/" + p[1] + "/" + p[0]; };
+
+interface SesionStats { id: string; presentes: number; total: number; pct: number }
 
 export default function AsistenciaManager({ user, mob, showT }: any) {
   const { colors, isDark, cardBg } = useC();
@@ -24,6 +27,29 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
   const [fDiv, sFDiv] = useState("");
   const [fRama, sFRama] = useState("");
   const [form, sForm] = useState<{fecha:string;division:string;rama:string;tipo_actividad:string;notas:string}>({ fecha: TODAY, division: DIVISIONES[0], rama: "A", tipo_actividad: "entrenamiento", notas: "" });
+  const [sesionStatsMap, setSesionStatsMap] = useState<Record<string, SesionStats>>({});
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // Load attendance stats for all sessions (for list view %)
+  useEffect(() => {
+    const sb = createClient();
+    sb.from("asistencia_registros").select("sesion_id, jugadora_id, presente").eq("presente", true).then(({ data }) => {
+      const map: Record<string, Set<string>> = {};
+      (data || []).forEach((r: any) => {
+        if (!map[r.sesion_id]) map[r.sesion_id] = new Set();
+        map[r.sesion_id].add(r.jugadora_id);
+      });
+      const statsMap: Record<string, SesionStats> = {};
+      sesiones.forEach(s => {
+        const activas = jugadoras.filter(j => j.estado !== "baja" && (j.division_efectiva || j.division_manual) === s.division && j.rama === s.rama);
+        const presCount = map[s.id]?.size || 0;
+        const tot = activas.length || 1;
+        statsMap[s.id] = { id: s.id, presentes: presCount, total: activas.length, pct: Math.round((presCount / tot) * 100) };
+      });
+      setSesionStatsMap(statsMap);
+      setLoadingStats(false);
+    });
+  }, [sesiones, jugadoras]);
 
   // Load registros when opening a session
   const loadRegistros = useCallback(async (sesionId: string) => {
@@ -34,7 +60,6 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
 
   const openDetail = (s: any) => { sSelSesion(s); sView("detail"); loadRegistros(s.id); sQrUrl(""); sQrTimer(0); };
 
-  // Create session
   const crearSesion = async () => {
     try {
       const res = await fetch("/api/hockey/asistencia", {
@@ -49,7 +74,6 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
     } catch (e: any) { showT(e.message || "Error", "err"); }
   };
 
-  // Generate QR
   const genQR = async () => {
     try {
       const res = await fetch("/api/hockey/asistencia/qr", {
@@ -68,14 +92,12 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
     } catch (e: any) { showT(e.message || "Error", "err"); }
   };
 
-  // QR timer countdown
   useEffect(() => {
     if (qrTimer <= 0) return;
     const t = setInterval(() => sQrTimer(p => p > 0 ? p - 1 : 0), 1000);
     return () => clearInterval(t);
   }, [qrTimer]);
 
-  // Toggle manual attendance
   const togglePresente = (jugadoraId: string) => {
     setRegistros(prev => {
       const exists = prev.find(r => r.jugadora_id === jugadoraId);
@@ -84,7 +106,6 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
     });
   };
 
-  // Save attendance
   const guardarAsistencia = async () => {
     try {
       const res = await fetch("/api/hockey/asistencia/registros", {
@@ -98,7 +119,6 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
     } catch (e: any) { showT(e.message || "Error", "err"); }
   };
 
-  // Close session
   const cerrarSesion = async () => {
     await guardarAsistencia();
     try {
@@ -114,20 +134,57 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
     } catch (e: any) { showT(e.message || "Error", "err"); }
   };
 
-  // Filter athletes for session
-  const sessionAthletes = selSesion ? jugadoras.filter(j => j.activa) : [];
+  // Filter athletes by session division+rama
+  const sessionAthletes = selSesion
+    ? jugadoras.filter(j => j.estado !== "baja" && (j.division_efectiva || j.division_manual) === selSesion.division && j.rama === selSesion.rama)
+    : [];
   const presentes = registros.filter(r => r.presente);
   const pct = sessionAthletes.length > 0 ? Math.round((presentes.length / sessionAthletes.length) * 100) : 0;
 
   const filtered = sesiones.filter(s => (!fDiv || s.division === fDiv) && (!fRama || s.rama === fRama));
 
+  // Average attendance for filtered sessions
+  const avgPct = useMemo(() => {
+    const vals = filtered.map(s => sesionStatsMap[s.id]?.pct).filter(v => v != null);
+    return vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+  }, [filtered, sesionStatsMap]);
+
+  // Low attendance sessions (< 50%)
+  const lowAttendance = useMemo(() => {
+    return filtered.filter(s => {
+      const st = sesionStatsMap[s.id];
+      return st && st.pct < 50 && st.total > 0;
+    }).length;
+  }, [filtered, sesionStatsMap]);
+
   // ── LIST VIEW ──
   if (view === "list") return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-        <h2 style={{ margin: 0, fontSize: mob ? 18 : 20, color: colors.nv }}>🏑 Asistencia</h2>
+        <h2 style={{ margin: 0, fontSize: mob ? 18 : 20, fontWeight: 800, color: colors.nv }}>Asistencia</h2>
         <Btn v="p" s="s" onClick={() => sView("new")}>+ Nueva Sesión</Btn>
       </div>
+
+      {/* Summary KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "repeat(4, 1fr)", gap: 8, marginBottom: 14 }}>
+        <div style={{ background: cardBg, borderRadius: 12, padding: "12px 14px", border: "1px solid " + colors.g2, textAlign: "center" }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: colors.nv }}>{filtered.length}</div>
+          <div style={{ fontSize: 10, color: colors.g5 }}>Sesiones</div>
+        </div>
+        <div style={{ background: cardBg, borderRadius: 12, padding: "12px 14px", border: "1px solid " + colors.g2, textAlign: "center" }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: avgPct >= 70 ? colors.gn : avgPct >= 50 ? colors.yl : colors.rd }}>{avgPct}%</div>
+          <div style={{ fontSize: 10, color: colors.g5 }}>Promedio Asistencia</div>
+        </div>
+        <div style={{ background: cardBg, borderRadius: 12, padding: "12px 14px", border: "1px solid " + colors.g2, textAlign: "center" }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: colors.gn }}>{filtered.filter(s => s.estado === "abierta").length}</div>
+          <div style={{ fontSize: 10, color: colors.g5 }}>Abiertas</div>
+        </div>
+        <div style={{ background: cardBg, borderRadius: 12, padding: "12px 14px", border: "1px solid " + colors.g2, textAlign: "center" }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: lowAttendance > 0 ? colors.rd : colors.gn }}>{lowAttendance}</div>
+          <div style={{ fontSize: 10, color: colors.g5 }}>Baja Asistencia (&lt;50%)</div>
+        </div>
+      </div>
+
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
         <select value={fDiv} onChange={e => sFDiv(e.target.value)} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, background: cardBg, color: colors.nv }}>
           <option value="">Todas las divisiones</option>
@@ -140,16 +197,29 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
       </div>
       {filtered.length === 0 ? <Card><div style={{ textAlign: "center", padding: 24, color: colors.g4 }}>No hay sesiones. Creá una nueva.</div></Card> : (
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill,minmax(280px,1fr))", gap: 10 }}>
-          {filtered.map(s => (
-            <Card key={s.id} onClick={() => openDetail(s)} style={{ cursor: "pointer" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: colors.nv }}>{fmtD(s.fecha)}</span>
-                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 12, background: s.estado === "abierta" ? "#D1FAE5" : colors.g2, color: s.estado === "abierta" ? "#065F46" : colors.g5, fontWeight: 600 }}>{s.estado === "abierta" ? "🟢 Abierta" : "⚫ Cerrada"}</span>
-              </div>
-              <div style={{ fontSize: 11, color: colors.g5 }}>{s.division} • Rama {s.rama}</div>
-              <div style={{ fontSize: 11, color: colors.g4, marginTop: 2 }}>{TIPO_ACTIVIDAD.find(t => t.k === s.tipo_actividad)?.i} {TIPO_ACTIVIDAD.find(t => t.k === s.tipo_actividad)?.l}</div>
-            </Card>
-          ))}
+          {filtered.map(s => {
+            const st = sesionStatsMap[s.id];
+            const sPct = st?.pct ?? 0;
+            return (
+              <Card key={s.id} onClick={() => openDetail(s)} style={{ cursor: "pointer" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: colors.nv }}>{fmtD(s.fecha)}</span>
+                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 12, background: s.estado === "abierta" ? "#D1FAE5" : colors.g2, color: s.estado === "abierta" ? "#065F46" : colors.g5, fontWeight: 600 }}>{s.estado === "abierta" ? "Abierta" : "Cerrada"}</span>
+                </div>
+                <div style={{ fontSize: 11, color: colors.g5 }}>{s.division} · Rama {s.rama}</div>
+                <div style={{ fontSize: 11, color: colors.g4, marginTop: 2 }}>{TIPO_ACTIVIDAD.find(t => t.k === s.tipo_actividad)?.i} {TIPO_ACTIVIDAD.find(t => t.k === s.tipo_actividad)?.l}</div>
+                {st && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                    <div style={{ flex: 1, height: 6, background: isDark ? "rgba(255,255,255,.08)" : colors.g1, borderRadius: 3, overflow: "hidden" }}>
+                      <div style={{ height: "100%", borderRadius: 3, width: sPct + "%", background: sPct >= 70 ? colors.gn : sPct >= 50 ? colors.yl : colors.rd }} />
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: sPct >= 70 ? colors.gn : sPct >= 50 ? colors.yl : colors.rd, minWidth: 36 }}>{sPct}%</span>
+                    <span style={{ fontSize: 10, color: colors.g4 }}>{st.presentes}/{st.total}</span>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
@@ -159,7 +229,7 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
   if (view === "new") return (
     <div>
       <Btn v="g" s="s" onClick={() => sView("list")}>← Volver</Btn>
-      <h3 style={{ margin: "12px 0", fontSize: 16, color: colors.nv }}>Nueva Sesión de Asistencia</h3>
+      <h3 style={{ margin: "12px 0", fontSize: 16, fontWeight: 700, color: colors.nv }}>Nueva Sesión de Asistencia</h3>
       <Card style={{ maxWidth: 480 }}>
         <div style={{ display: "flex", flexDirection: "column" as const, gap: 12 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Fecha
@@ -195,10 +265,10 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
       <Btn v="g" s="s" onClick={() => { sView("list"); sSelSesion(null); }}>← Volver</Btn>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: 16, color: colors.nv }}>{fmtD(selSesion.fecha)} — {selSesion.division}</h3>
-          <div style={{ fontSize: 11, color: colors.g5 }}>Rama {selSesion.rama} • {TIPO_ACTIVIDAD.find(t => t.k === selSesion.tipo_actividad)?.l}</div>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: colors.nv }}>{fmtD(selSesion.fecha)} — {selSesion.division}</h3>
+          <div style={{ fontSize: 11, color: colors.g5 }}>Rama {selSesion.rama} · {TIPO_ACTIVIDAD.find(t => t.k === selSesion.tipo_actividad)?.l}</div>
         </div>
-        <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 12, background: selSesion.estado === "abierta" ? "#D1FAE5" : colors.g2, color: selSesion.estado === "abierta" ? "#065F46" : colors.g5, fontWeight: 600 }}>{selSesion.estado === "abierta" ? "🟢 Abierta" : "⚫ Cerrada"}</span>
+        <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 12, background: selSesion.estado === "abierta" ? "#D1FAE5" : colors.g2, color: selSesion.estado === "abierta" ? "#065F46" : colors.g5, fontWeight: 600 }}>{selSesion.estado === "abierta" ? "Abierta" : "Cerrada"}</span>
       </div>
 
       <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
@@ -206,15 +276,15 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
         <div>
           <div style={{ fontSize: 22, fontWeight: 800, color: colors.nv }}>{presentes.length}/{sessionAthletes.length}</div>
           <div style={{ fontSize: 11, color: colors.g5 }}>Presentes ({pct}%)</div>
-          <div style={{ fontSize: 10, color: colors.g4 }}>QR: {presentes.filter(r => r.metodo === "qr").length} • Manual: {presentes.filter(r => r.metodo === "manual").length}</div>
+          <div style={{ fontSize: 10, color: colors.g4 }}>QR: {presentes.filter(r => r.metodo === "qr").length} · Manual: {presentes.filter(r => r.metodo === "manual").length}</div>
         </div>
       </div>
 
       {selSesion.estado === "abierta" && (
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-          <Btn v="pu" s="s" onClick={genQR}>📱 Generar QR</Btn>
-          <Btn v="s" s="s" onClick={guardarAsistencia}>💾 Guardar</Btn>
-          <Btn v="r" s="s" onClick={cerrarSesion}>🔒 Cerrar Sesión</Btn>
+          <Btn v="pu" s="s" onClick={genQR}>Generar QR</Btn>
+          <Btn v="s" s="s" onClick={guardarAsistencia}>Guardar</Btn>
+          <Btn v="r" s="s" onClick={cerrarSesion}>Cerrar Sesión</Btn>
         </div>
       )}
 
@@ -227,8 +297,8 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
       )}
 
       <Card>
-        <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv, marginBottom: 10 }}>Listado de Jugadoras</div>
-        {sessionAthletes.length === 0 ? <div style={{ color: colors.g4, fontSize: 12 }}>No hay jugadoras activas en el padrón</div> : (
+        <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv, marginBottom: 10 }}>Listado — {selSesion.division} Rama {selSesion.rama}</div>
+        {sessionAthletes.length === 0 ? <div style={{ color: colors.g4, fontSize: 12 }}>No hay jugadoras activas en esta división y rama</div> : (
           <div style={{ display: "flex", flexDirection: "column" as const, gap: 2 }}>
             {sessionAthletes.map(j => {
               const reg = registros.find(r => r.jugadora_id === j.id);
