@@ -97,6 +97,22 @@ export default function ViajeChecklist({ viajeId }: { viajeId: string }) {
   const toggle = (si: number, ii: number) => { const k = `${si}-${ii}`; save({ ...checked, [k]: !checked[k] }); };
   const reset = () => { if (confirm("¿Reiniciar todo el checklist?")) { setChecked({}); localStorage.removeItem(key); } };
 
+  const handlePrint = () => {
+    const html = DATA.map((sec, si) => {
+      const items = sec.items.map((item, ii) => {
+        const done = !!checked[`${si}-${ii}`];
+        return `<div style="display:flex;align-items:flex-start;gap:8px;padding:3px 0"><span style="font-size:16px">${done ? "☑" : "☐"}</span><div><span style="font-size:13px;${done ? "text-decoration:line-through;opacity:.5" : ""}">${item.text}</span>${item.detail ? `<div style="font-size:10px;color:#888">${item.detail}</div>` : ""}</div></div>`;
+      }).join("");
+      const tip = TIPS[si] ? `<div style="margin:6px 0 10px;padding:8px 12px;border-radius:6px;background:#FEF9C3;font-size:11px;color:#92400E">${TIPS[si]}</div>` : "";
+      return `<div style="margin-bottom:12px"><div style="font-size:14px;font-weight:700;margin-bottom:4px">${sec.emoji} ${sec.title}</div>${items}</div>${tip}`;
+    }).join("");
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(`<html><head><title>Checklist de Viaje</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:24px;max-width:700px;margin:0 auto}@media print{body{padding:12px}}</style></head><body><h2 style="margin:0 0 4px">📋 Checklist de Viaje</h2><div style="font-size:12px;color:#666;margin-bottom:16px">${doneCount}/${TOTAL} completado (${pct}%)</div>${html}</body></html>`);
+    w.document.close();
+    w.print();
+  };
+
   const doneCount = useMemo(() => Object.values(checked).filter(Boolean).length, [checked]);
   const pct = TOTAL ? Math.round(doneCount / TOTAL * 100) : 0;
 
@@ -157,10 +173,13 @@ export default function ViajeChecklist({ viajeId }: { viajeId: string }) {
         );
       })}
 
-      {/* Reset */}
-      <div style={{ marginTop: 12, textAlign: "center" as const }}>
+      {/* Actions */}
+      <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 10 }}>
+        <button onClick={handlePrint} style={{ padding: "6px 16px", borderRadius: 6, border: "1px solid " + colors.bl, background: "transparent", color: colors.bl, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+          🖨 Imprimir
+        </button>
         <button onClick={reset} style={{ padding: "6px 16px", borderRadius: 6, border: "1px solid " + colors.rd, background: "transparent", color: colors.rd, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-          🔄 Reiniciar checklist
+          🔄 Reiniciar
         </button>
       </div>
     </div>
