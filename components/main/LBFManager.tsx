@@ -1,9 +1,9 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useC } from "@/lib/theme-context";
 import { Card, Btn, LbfBadge, Empty, Spinner, useMobile, Pager } from "@/components/ui";
 import { apiFetch } from "@/lib/api/apiFetch";
-import { DIVISIONES, RAMAS, LBF_ST } from "@/lib/constants";
+import { DIVISIONES, RAMAS, LBF_ST, findEntrenadora } from "@/lib/constants";
 import { canAddToLBF, fullName } from "@/lib/mappers";
 import { printLBF, shareLBFWhatsApp } from "@/lib/export";
 import { createClient } from "@/lib/supabase/client";
@@ -12,6 +12,7 @@ import type { Jugadora, LBF, LBFJugadora } from "@/lib/supabase/types";
 import LBFHistory from "./LBFHistory";
 
 type View = "list" | "new" | "detail";
+const currentYear = new Date().getFullYear();
 
 export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefresh }: { jugadoras: Jugadora[]; lbfs: LBF[]; userId: string; userLevel: number; onRefresh: () => void }) {
   const { colors, cardBg } = useC();
@@ -19,11 +20,18 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
   const [view, setView] = useState<View>("list");
   const [selLbf, setSelLbf] = useState<LBF | null>(null);
   const [lbfPlayers, setLbfPlayers] = useState<(LBFJugadora & { jugadora?: Jugadora })[]>([]);
-  const [form, setForm] = useState({ nombre: "", division: DIVISIONES[0] as string, rama: RAMAS[0] as string, fecha_partido: "", rival: "", sede: "" });
+  const [form, setForm] = useState({ ano: currentYear, division: DIVISIONES[0] as string, rama: RAMAS[0] as string, entrenadora: "" });
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(1);
+  const [filterDiv, setFilterDiv] = useState<string>("");
 
   const sb = createClient();
+
+  // Auto-populate entrenadora when division/rama changes
+  useEffect(() => {
+    const ent = findEntrenadora(form.division, form.rama);
+    setForm(prev => ({ ...prev, entrenadora: ent }));
+  }, [form.division, form.rama]);
 
   const openDetail = async (lbf: LBF) => {
     setSelLbf(lbf);
@@ -34,13 +42,13 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
 
   const createLBF = async () => {
     setSaving(true);
-    const res = await apiFetch("/api/hockey/lbf", { method: "POST", body: JSON.stringify({ ...form, creado_por: userId }) });
+    const res = await apiFetch("/api/hockey/lbf", { method: "POST", body: JSON.stringify({ ano: form.ano, division: form.division, rama: form.rama, entrenadora: form.entrenadora || null }) });
     const data = await res.json();
     setSaving(false);
     if (data.error) return alert(data.error);
     onRefresh();
     setView("list");
-    setForm({ nombre: "", division: DIVISIONES[0], rama: RAMAS[0], fecha_partido: "", rival: "", sede: "" });
+    setForm({ ano: currentYear, division: DIVISIONES[0], rama: RAMAS[0], entrenadora: "" });
   };
 
   const addPlayer = async (j: Jugadora) => {
@@ -83,7 +91,6 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
     if (!selLbf) return [];
     const inLbf = new Set(lbfPlayers.map(p => p.jugadora_id));
     return jugadoras.filter(j => j.activa && !inLbf.has(j.id)).sort((a, b) => {
-      // Prioritize same division/rama, then sort alphabetically
       const aMatch = ((a.division_efectiva || a.division_manual) === selLbf.division && a.rama === selLbf.rama) ? 0 : 1;
       const bMatch = ((b.division_efectiva || b.division_manual) === selLbf.division && b.rama === selLbf.rama) ? 0 : 1;
       if (aMatch !== bMatch) return aMatch - bMatch;
@@ -91,7 +98,12 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
     });
   }, [selLbf, jugadoras, lbfPlayers]);
 
-  const pagedLbfs = paginate(lbfs, page, 15);
+  const filteredLbfs = useMemo(() => {
+    if (!filterDiv) return lbfs;
+    return lbfs.filter(l => l.division === filterDiv);
+  }, [lbfs, filterDiv]);
+
+  const pagedLbfs = paginate(filteredLbfs, page, 15);
 
   if (view === "new") {
     const inputSt: React.CSSProperties = { width: "100%", padding: 8, borderRadius: 7, border: "1px solid " + colors.g3, fontSize: 12, boxSizing: "border-box" };
@@ -101,16 +113,14 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
         <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.nv, marginBottom: 14 }}>Nueva Lista de Buena Fe</h3>
         <Card>
           <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
-            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Nombre *</label><input value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} style={inputSt} /></div>
-            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>División</label><select value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} style={inputSt}>{DIVISIONES.map(d => <option key={d}>{d}</option>)}</select></div>
-            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Rama</label><select value={form.rama} onChange={e => setForm({ ...form, rama: e.target.value })} style={inputSt}>{RAMAS.map(r => <option key={r}>{r}</option>)}</select></div>
-            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Fecha Partido</label><input type="date" value={form.fecha_partido} onChange={e => setForm({ ...form, fecha_partido: e.target.value })} style={inputSt} /></div>
-            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Rival</label><input value={form.rival} onChange={e => setForm({ ...form, rival: e.target.value })} style={inputSt} /></div>
-            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Sede</label><input value={form.sede} onChange={e => setForm({ ...form, sede: e.target.value })} style={inputSt} /></div>
+            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Año *</label><input type="number" value={form.ano} onChange={e => setForm({ ...form, ano: Number(e.target.value) })} style={inputSt} min={2020} max={2100} /></div>
+            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>División *</label><select value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} style={inputSt}>{DIVISIONES.map(d => <option key={d}>{d}</option>)}</select></div>
+            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Rama *</label><select value={form.rama} onChange={e => setForm({ ...form, rama: e.target.value })} style={inputSt}>{RAMAS.map(r => <option key={r}>{r}</option>)}</select></div>
+            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Entrenador/a</label><input value={form.entrenadora} onChange={e => setForm({ ...form, entrenadora: e.target.value })} style={inputSt} placeholder="Auto-detectado del organigrama" /></div>
           </div>
           <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
             <Btn v="g" onClick={() => setView("list")}>Cancelar</Btn>
-            <Btn disabled={!form.nombre || saving} onClick={createLBF}>{saving ? "Creando..." : "Crear LBF"}</Btn>
+            <Btn disabled={!form.ano || !form.division || !form.rama || saving} onClick={createLBF}>{saving ? "Creando..." : "Crear LBF"}</Btn>
           </div>
         </Card>
       </div>
@@ -125,16 +135,16 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: colors.nv }}>{selLbf.nombre}</h3>
-            <div style={{ fontSize: 11, color: colors.g4, marginTop: 2 }}>{selLbf.division} | {selLbf.rama} {selLbf.rival && `| vs ${selLbf.rival}`}</div>
+            <div style={{ fontSize: 11, color: colors.g4, marginTop: 2 }}>{selLbf.division} | Rama {selLbf.rama}{selLbf.entrenadora ? ` | ${selLbf.entrenadora}` : ""} | Temporada {selLbf.ano}</div>
           </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <LbfBadge s={selLbf.estado} />
             {editable && <Btn s="s" v="w" onClick={() => updateEstado("pendiente")}>Enviar a Aprobación</Btn>}
             {selLbf.estado === LBF_ST.PEND && userLevel <= 2 && <Btn s="s" v="s" onClick={() => updateEstado("aprobada")}>Aprobar</Btn>}
             {selLbf.estado === LBF_ST.PEND && userLevel <= 2 && <Btn s="s" v="r" onClick={() => updateEstado("rechazada")}>Rechazar</Btn>}
-            <Btn s="s" v="g" onClick={() => printLBF(selLbf, lbfPlayers)}>📄 Descargar PDF</Btn>
-            <Btn s="s" v="g" onClick={() => shareLBFWhatsApp(selLbf, lbfPlayers)}>📲 WhatsApp</Btn>
-            {userLevel <= 3 && <Btn s="s" v="r" onClick={deleteLBF}>🗑 Eliminar</Btn>}
+            <Btn s="s" v="g" onClick={() => printLBF(selLbf, lbfPlayers)}>Descargar PDF</Btn>
+            <Btn s="s" v="g" onClick={() => shareLBFWhatsApp(selLbf, lbfPlayers)}>WhatsApp</Btn>
+            {userLevel <= 3 && <Btn s="s" v="r" onClick={deleteLBF}>Eliminar</Btn>}
           </div>
         </div>
 
@@ -153,7 +163,7 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
                         <div>
                           <span style={{ color: blocked ? colors.g4 : colors.nv }}>{j.apellido}, {j.nombre}</span>
                           {!divMatch && <span style={{ fontSize: 9, color: colors.yl, marginLeft: 4 }}>({j.rama} - {j.division_efectiva || j.division_manual || "Sin div."})</span>}
-                          {blocked && <div style={{ fontSize: 9, color: colors.rd, fontWeight: 600, marginTop: 1 }}>🚫 {check.reason}</div>}
+                          {blocked && <div style={{ fontSize: 9, color: colors.rd, fontWeight: 600, marginTop: 1 }}>{check.reason}</div>}
                         </div>
                         {blocked
                           ? <span style={{ fontSize: 9, color: colors.rd, fontWeight: 600, flexShrink: 0, padding: "3px 8px" }}>Bloqueada</span>
@@ -195,18 +205,24 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
-        <h2 style={{ margin: 0, fontSize: mob ? 16 : 20, fontWeight: 800, color: colors.nv }}>📋 Listas de Buena Fe</h2>
-        <Btn s="s" onClick={() => setView("new")}>+ Nueva LBF</Btn>
+        <h2 style={{ margin: 0, fontSize: mob ? 16 : 20, fontWeight: 800, color: colors.nv }}>Listas de Buena Fe</h2>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <select value={filterDiv} onChange={e => { setFilterDiv(e.target.value); setPage(1); }} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, color: colors.g5 }}>
+            <option value="">Todas las divisiones</option>
+            {DIVISIONES.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <Btn s="s" onClick={() => setView("new")}>+ Nueva LBF</Btn>
+        </div>
       </div>
-      {pagedLbfs.data.length === 0 ? <Empty icon="📋" title="Sin listas" sub="Creá tu primera Lista de Buena Fe" /> : (
+      {pagedLbfs.data.length === 0 ? <Empty icon="📋" title="Sin listas" sub={filterDiv ? `No hay listas para ${filterDiv}` : "Creá tu primera Lista de Buena Fe"} /> : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {pagedLbfs.data.map(lbf => (
             <Card key={lbf.id} onClick={() => openDetail(lbf)} style={{ cursor: "pointer", padding: 12, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: 140 }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: colors.nv }}>{lbf.nombre}</div>
-                <div style={{ fontSize: 11, color: colors.g4 }}>{lbf.division} | {lbf.rama} {lbf.rival && `| vs ${lbf.rival}`}</div>
+                <div style={{ fontSize: 11, color: colors.g4 }}>{lbf.division} | Rama {lbf.rama}{lbf.entrenadora ? ` | ${lbf.entrenadora}` : ""}</div>
               </div>
-              {lbf.fecha_partido && <span style={{ fontSize: 11, color: colors.g5 }}>{lbf.fecha_partido}</span>}
+              <span style={{ fontSize: 11, color: colors.g5 }}>{lbf.ano}</span>
               <LbfBadge s={lbf.estado} sm />
             </Card>
           ))}

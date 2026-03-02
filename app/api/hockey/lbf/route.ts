@@ -5,7 +5,7 @@ import { LBFCreateSchema, LBFUpdateSchema } from "@/lib/api/schemas";
 
 export async function GET() {
   const sb = createAdminClient();
-  const { data, error } = await sb.from("lbf").select("*").order("created_at", { ascending: false });
+  const { data, error } = await sb.from("lbf").select("*").order("ano", { ascending: false }).order("division").order("rama");
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json(data);
 }
@@ -20,15 +20,20 @@ export async function POST(req: NextRequest) {
     if ("error" in v) return authError(v.error, v.status);
 
     const sb = createAdminClient();
-    const insertData = { ...body, creado_por: auth.user.id };
+    const nombre = `LBF ${body.ano} - ${body.division} ${body.rama}`;
+    const insertData = { ...body, nombre, creado_por: auth.user.id };
     const { data, error } = await sb.from("lbf").insert(insertData).select().single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error) {
+      // Unique constraint violation (ano, division, rama)
+      if (error.code === "23505") return NextResponse.json({ error: `Ya existe una LBF para ${body.division} ${body.rama} en ${body.ano}` }, { status: 409 });
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
 
     // Audit
     await sb.from("lbf_historial").insert({
       lbf_id: data.id,
       accion: "creada",
-      detalle: `LBF "${data.nombre}" creada`,
+      detalle: `LBF "${nombre}" creada`,
       user_id: auth.user.id,
     });
 

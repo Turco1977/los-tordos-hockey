@@ -142,6 +142,18 @@ export const ORGANIGRAMA: { area: string; icon: string; color: string; members: 
   ]},
 ];
 
+/* ── Find entrenadora for a given division/rama from ORGANIGRAMA ── */
+export function findEntrenadora(division: string, rama: string): string {
+  for (const area of ORGANIGRAMA) {
+    for (const m of area.members) {
+      if (m.role === "Entrenador" && m.rama === rama && m.divisiones?.includes(division)) {
+        return m.nombre;
+      }
+    }
+  }
+  return "";
+}
+
 /* ── Division age mapping (year cutoffs for 2026 season) ── */
 export const DIV_YEAR_MAP: Record<string, { min: number; max: number }> = {
   "Primera":     { min: 0, max: 2008 },

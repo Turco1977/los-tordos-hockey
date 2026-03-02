@@ -80,7 +80,7 @@ export const useStore = create<HockeyStore>((set, get) => ({
   fetchLBFs: async () => {
     set({ lbfsLoading: true });
     const sb = createClient();
-    const { data } = await sb.from("lbf").select("*").order("created_at", { ascending: false });
+    const { data } = await sb.from("lbf").select("*").order("ano", { ascending: false }).order("division").order("rama");
     set({ lbfs: (data || []) as LBF[], lbfsLoading: false });
   },
 

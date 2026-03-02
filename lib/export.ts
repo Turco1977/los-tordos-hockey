@@ -43,8 +43,8 @@ export function printLBF(lbf: LBF, jugadoras: (LBFJugadora & { jugadora?: Jugado
 </style></head><body>
 <h1>Lista de Buena Fe: ${lbf.nombre}</h1>
 <div class="meta">
-  ${lbf.division} - ${lbf.rama}<br/>
-  ${lbf.rival ? `vs ${lbf.rival}` : ""}${lbf.fecha_partido ? ` | ${lbf.fecha_partido}` : ""}${lbf.sede ? ` | ${lbf.sede}` : ""}
+  ${lbf.division} - Rama ${lbf.rama}<br/>
+  Temporada ${lbf.ano}${lbf.entrenadora ? ` | Entrenador/a: ${lbf.entrenadora}` : ""}
 </div>
 <h2>Titulares (${titulares.length})</h2>
 <table><thead><tr><th>#</th><th>Camiseta</th><th>Jugadora</th><th>DNI</th><th>Posición</th></tr></thead><tbody>
@@ -73,9 +73,8 @@ export function shareLBFWhatsApp(lbf: LBF, jugadoras: (LBFJugadora & { jugadora?
   let text = `🏑 *Lista de Buena Fe*\n`;
   text += `*${lbf.nombre}*\n`;
   text += `${lbf.division} - Rama ${lbf.rama}\n`;
-  if (lbf.rival) text += `vs ${lbf.rival}\n`;
-  if (lbf.fecha_partido) text += `📅 ${lbf.fecha_partido}\n`;
-  if (lbf.sede) text += `📍 ${lbf.sede}\n`;
+  text += `📅 Temporada ${lbf.ano}\n`;
+  if (lbf.entrenadora) text += `📋 Entrenador/a: ${lbf.entrenadora}\n`;
   text += `\n*Titulares (${titulares.length}):*\n`;
   titulares.forEach((j, i) => {
     text += `${i + 1}. ${j.jugadora ? fullName(j.jugadora) : "-"}${j.numero_camiseta ? ` (#${j.numero_camiseta})` : ""}\n`;

@@ -66,10 +66,9 @@ export interface LBF {
   nombre: string;
   division: Division;
   rama: Rama;
+  ano: number;
+  entrenadora: string | null;
   estado: LbfStatus;
-  fecha_partido: string | null;
-  rival: string | null;
-  sede: string | null;
   notas: string | null;
   creado_por: string;
   aprobado_por: string | null;

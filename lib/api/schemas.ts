@@ -93,9 +93,10 @@ export const CalendarioUpdateSchema = z.object({
 
 /* ── LBF ── */
 export const LBFCreateSchema = z.object({
-  nombre: z.string().min(1, "nombre requerido"),
+  ano: z.number().int().min(2020).max(2100),
   division: z.string().min(1),
   rama: z.enum(["A", "B", "C", "D", "E"]),
+  entrenadora: z.string().optional(),
   creado_por: uuid,
 }).passthrough();
 
