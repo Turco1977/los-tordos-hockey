@@ -25,6 +25,8 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
   const [page, setPage] = useState(1);
   const [filterDiv, setFilterDiv] = useState<string>("");
   const [search, setSearch] = useState("");
+  const [availDiv, setAvailDiv] = useState<string>("");
+  const [availRama, setAvailRama] = useState<string>("");
 
   const sb = createClient();
 
@@ -36,6 +38,9 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
 
   const openDetail = async (lbf: LBF) => {
     setSelLbf(lbf);
+    setAvailDiv(lbf.division);
+    setAvailRama(lbf.rama);
+    setSearch("");
     const { data } = await sb.from("lbf_jugadoras").select("*, jugadora:jugadoras(*)").eq("lbf_id", lbf.id).order("orden");
     setLbfPlayers((data || []) as any);
     setView("detail");
@@ -93,15 +98,13 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
     const inLbf = new Set(lbfPlayers.map(p => p.jugadora_id));
     let list = jugadoras.filter(j => j.activa && !inLbf.has(j.id));
     if (search.trim()) {
-      // Search mode: search across ALL players
       const q = search.trim().toLowerCase();
       list = list.filter(j => `${j.apellido} ${j.nombre}`.toLowerCase().includes(q) || j.dni.includes(q));
-    } else {
-      // Default: show only players from this division/rama
-      list = list.filter(j => (j.division_efectiva || j.division_manual) === selLbf.division && j.rama === selLbf.rama);
     }
+    if (availDiv) list = list.filter(j => (j.division_efectiva || j.division_manual) === availDiv);
+    if (availRama) list = list.filter(j => j.rama === availRama);
     return list.sort((a, b) => a.apellido.localeCompare(b.apellido));
-  }, [selLbf, jugadoras, lbfPlayers, search]);
+  }, [selLbf, jugadoras, lbfPlayers, search, availDiv, availRama]);
 
   const filteredLbfs = useMemo(() => {
     if (!filterDiv) return lbfs;
@@ -159,7 +162,17 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv }}>Disponibles ({available.length})</div>
               </div>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre o DNI (busca en todas las divisiones)..." style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, marginBottom: 8, boxSizing: "border-box" }} />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre o DNI..." style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, marginBottom: 6, boxSizing: "border-box" }} />
+              <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                <select value={availDiv} onChange={e => setAvailDiv(e.target.value)} style={{ flex: 1, padding: "4px 6px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 10, color: colors.g5 }}>
+                  <option value="">Todas las divisiones</option>
+                  {DIVISIONES.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <select value={availRama} onChange={e => setAvailRama(e.target.value)} style={{ padding: "4px 6px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 10, color: colors.g5 }}>
+                  <option value="">Todas</option>
+                  {RAMAS.map(r => <option key={r} value={r}>Rama {r}</option>)}
+                </select>
+              </div>
               {available.length === 0 ? <div style={{ fontSize: 11, color: colors.g4 }}>{search ? "Sin resultados" : "No hay más jugadoras en esta división/rama"}</div> : (
                 <div style={{ maxHeight: 400, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
                   {available.map(j => {
