@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { DIVISIONES, RAMAS, CONVOCATORIA_TIPOS, EVENTO_TIPOS, RESULTADO_COLORS } from "@/lib/constants";
+import { DIVISIONES, RAMAS, CONVOCATORIA_TIPOS } from "@/lib/constants";
 import { Btn, Card } from "@/components/ui";
 import { apiFetch } from "@/lib/api/apiFetch";
 import { useC } from "@/lib/theme-context";
@@ -22,11 +22,9 @@ export default function PartidosManager({ user, mob, showT }: any) {
   const [view, sView] = useState<"list" | "new" | "detail">("list");
   const [sel, sSel] = useState<any>(null);
   const [convocadas, sConvocadas] = useState<any[]>([]);
-  const [eventos, sEventos] = useState<any[]>([]);
   const [fDiv, sFDiv] = useState("");
   const [fRama, sFRama] = useState("");
   const [form, sForm] = useState<{fecha:string;rival:string;sede:string;division:string;rama:string;competencia:string;notas:string}>({ fecha: TODAY, rival: "", sede: "local", division: DIVISIONES[0], rama: "A", competencia: "partido", notas: "" });
-  const [evForm, sEvForm] = useState({ tipo: "gol", jugadora_id: "", minuto: "" });
   const [lbfJugadoraIds, sLbfJugadoraIds] = useState<string[]>([]);
   const [loadingLbf, sLoadingLbf] = useState(false);
 
@@ -48,12 +46,8 @@ export default function PartidosManager({ user, mob, showT }: any) {
   const loadDetail = useCallback(async (p: any) => {
     sSel(p);
     sView("detail");
-    const [cRes, eRes] = await Promise.all([
-      apiFetch("/api/hockey/partidos/convocadas?partido_id=" + p.id),
-      apiFetch("/api/hockey/partidos/eventos?partido_id=" + p.id),
-    ]);
+    const cRes = await apiFetch("/api/hockey/partidos/convocadas?partido_id=" + p.id);
     sConvocadas(await cRes.json());
-    sEventos(await eRes.json());
   }, []);
 
   // Create convocatoria
@@ -82,58 +76,6 @@ export default function PartidosManager({ user, mob, showT }: any) {
     } catch (e: any) { showT(e.message || "Error", "err"); }
   };
 
-  // Update score
-  const updateScore = async (field: string, value: number) => {
-    try {
-      const res = await apiFetch("/api/hockey/partidos", {
-        method: "PUT", body: JSON.stringify({ id: sel.id, [field]: Math.max(0, value), resultado: calcResultado(field === "goles_favor" ? value : sel.goles_favor, field === "goles_contra" ? value : sel.goles_contra) }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      sSel(data);
-      setPartidos(p => p.map(x => x.id === data.id ? data : x));
-    } catch (e: any) { showT(e.message || "Error", "err"); }
-  };
-
-  const calcResultado = (f: number, c: number) => f > c ? "V" : f < c ? "D" : "E";
-
-  // Add event
-  const addEvento = async () => {
-    if (!evForm.jugadora_id) { showT("Seleccioná jugadora", "err"); return; }
-    try {
-      const res = await apiFetch("/api/hockey/partidos/eventos", {
-        method: "POST", body: JSON.stringify({ partido_id: sel.id, ...evForm, minuto: evForm.minuto ? parseInt(evForm.minuto) : null }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      sEventos(p => [...p, data]);
-      sEvForm({ tipo: "gol", jugadora_id: "", minuto: "" });
-      const pRes = await apiFetch("/api/hockey/partidos");
-      const all = await pRes.json();
-      if (Array.isArray(all)) {
-        setPartidos(() => all);
-        const updated = all.find((p: any) => p.id === sel.id);
-        if (updated) sSel(updated);
-      }
-      showT("Evento registrado");
-    } catch (e: any) { showT(e.message || "Error", "err"); }
-  };
-
-  // Delete event
-  const delEvento = async (id: string) => {
-    try {
-      await apiFetch("/api/hockey/partidos/eventos?id=" + id + "&partido_id=" + sel.id, { method: "DELETE" });
-      sEventos(p => p.filter(e => e.id !== id));
-      const pRes = await apiFetch("/api/hockey/partidos");
-      const all = await pRes.json();
-      if (Array.isArray(all)) {
-        setPartidos(() => all);
-        const updated = all.find((p: any) => p.id === sel.id);
-        if (updated) sSel(updated);
-      }
-    } catch (e: any) { showT(e.message || "Error", "err"); }
-  };
-
   // Save convocadas
   const saveConvocadas = async (ids: string[]) => {
     try {
@@ -143,6 +85,19 @@ export default function PartidosManager({ user, mob, showT }: any) {
       const data = await res.json();
       if (Array.isArray(data)) sConvocadas(data);
       showT("Plantel guardado");
+    } catch (e: any) { showT(e.message || "Error", "err"); }
+  };
+
+  // Delete convocatoria
+  const deleteConvocatoria = async () => {
+    if (!sel || !confirm("¿Eliminar esta convocatoria?")) return;
+    try {
+      const res = await apiFetch("/api/hockey/partidos?id=" + sel.id, { method: "DELETE" });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setPartidos(p => p.filter(x => x.id !== sel.id));
+      showT("Convocatoria eliminada");
+      sView("list"); sSel(null);
     } catch (e: any) { showT(e.message || "Error", "err"); }
   };
 
@@ -179,16 +134,12 @@ export default function PartidosManager({ user, mob, showT }: any) {
       {filtered.length === 0 ? <Card><div style={{ textAlign: "center", padding: 24, color: colors.g4 }}>No hay convocatorias registradas.</div></Card> : (
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill,minmax(300px,1fr))", gap: 10 }}>
           {filtered.map(p => {
-            const rc = RESULTADO_COLORS[p.resultado || ""] || { bg: colors.g2, c: colors.g5 };
             const tipo = CONVOCATORIA_TIPOS.find(c => c.k === p.competencia);
             return (
               <Card key={p.id} onClick={() => loadDetail(p)} style={{ cursor: "pointer" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: colors.nv }}>{fmtD(p.fecha)}</span>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    {tipo && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: p.competencia === "partido" ? "#DBEAFE" : "#F3E8FF", color: p.competencia === "partido" ? "#1D4ED8" : "#7C3AED", fontWeight: 600 }}>{tipo.i} {tipo.l}</span>}
-                    {p.resultado && <span style={{ fontSize: 11, padding: "2px 10px", borderRadius: 12, background: rc.bg, color: rc.c, fontWeight: 700 }}>{p.resultado} {p.goles_favor}-{p.goles_contra}</span>}
-                  </div>
+                  {tipo && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: p.competencia === "partido" ? "#DBEAFE" : "#F3E8FF", color: p.competencia === "partido" ? "#1D4ED8" : "#7C3AED", fontWeight: 600 }}>{tipo.i} {tipo.l}</span>}
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: colors.nv }}>{p.competencia === "entrenamiento" ? "🏋️ Entrenamiento" : `vs ${p.rival}`}</div>
                 <div style={{ fontSize: 11, color: colors.g5, marginTop: 2 }}>{p.division} • Rama {p.rama} • {p.sede === "local" ? "🏠 Local" : "✈️ Visitante"}</div>
@@ -289,83 +240,21 @@ export default function PartidosManager({ user, mob, showT }: any) {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", flexWrap: "wrap", gap: 8 }}>
         <Btn v="g" s="s" onClick={() => { sView("list"); sSel(null); }}>← Volver</Btn>
-        <Btn v="s" s="s" onClick={shareWhatsApp}>📱 WhatsApp</Btn>
+        <div style={{ display: "flex", gap: 6 }}>
+          <Btn v="s" s="s" onClick={shareWhatsApp}>📱 WhatsApp</Btn>
+          <Btn v="g" s="s" onClick={deleteConvocatoria} style={{ color: colors.rd }}>🗑️ Eliminar</Btn>
+        </div>
       </div>
       <div style={{ marginTop: 12, marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           {tipoLabel && <span style={{ fontSize: 11, padding: "2px 10px", borderRadius: 10, background: isPartido ? "#DBEAFE" : "#F3E8FF", color: isPartido ? "#1D4ED8" : "#7C3AED", fontWeight: 600 }}>{tipoLabel.i} {tipoLabel.l}</span>}
         </div>
-        {isPartido && (
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: colors.nv }}>{sel.goles_favor} - {sel.goles_contra}</div>
-            {sel.resultado && <span style={{ fontSize: 14, padding: "2px 12px", borderRadius: 12, background: (RESULTADO_COLORS[sel.resultado] || {}).bg, color: (RESULTADO_COLORS[sel.resultado] || {}).c, fontWeight: 700 }}>{sel.resultado}</span>}
-          </div>
-        )}
         <div style={{ fontSize: 15, fontWeight: 600, color: colors.nv, marginTop: 4 }}>
           {isPartido ? `vs ${sel.rival}` : "🏋️ Entrenamiento"}
         </div>
         <div style={{ fontSize: 11, color: colors.g5 }}>{fmtD(sel.fecha)} • {sel.division} • Rama {sel.rama} • {sel.sede === "local" ? "🏠 Local" : "✈️ Visitante"}</div>
         {sel.notas && <div style={{ fontSize: 12, color: colors.g5, marginTop: 6, padding: "8px 12px", background: isDark ? "rgba(255,255,255,.04)" : "#F9FAFB", borderRadius: 6, fontStyle: "italic" }}>📝 {sel.notas}</div>}
       </div>
-
-      {/* Score controls - only for partidos */}
-      {isPartido && (
-        <Card style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: colors.nv }}>Marcador</div>
-          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-            <div style={{ textAlign: "center" as const }}>
-              <div style={{ fontSize: 10, color: colors.g5, marginBottom: 4 }}>A favor</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <button onClick={() => updateScore("goles_favor", sel.goles_favor - 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid " + colors.g3, background: cardBg, cursor: "pointer", fontSize: 14, color: colors.nv }}>−</button>
-                <span style={{ fontSize: 20, fontWeight: 800, minWidth: 30, textAlign: "center" as const, color: colors.nv }}>{sel.goles_favor}</span>
-                <button onClick={() => updateScore("goles_favor", sel.goles_favor + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid " + colors.g3, background: cardBg, cursor: "pointer", fontSize: 14, color: colors.nv }}>+</button>
-              </div>
-            </div>
-            <div style={{ textAlign: "center" as const }}>
-              <div style={{ fontSize: 10, color: colors.g5, marginBottom: 4 }}>En contra</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <button onClick={() => updateScore("goles_contra", sel.goles_contra - 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid " + colors.g3, background: cardBg, cursor: "pointer", fontSize: 14, color: colors.nv }}>−</button>
-                <span style={{ fontSize: 20, fontWeight: 800, minWidth: 30, textAlign: "center" as const, color: colors.nv }}>{sel.goles_contra}</span>
-                <button onClick={() => updateScore("goles_contra", sel.goles_contra + 1)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid " + colors.g3, background: cardBg, cursor: "pointer", fontSize: 14, color: colors.nv }}>+</button>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Events - only for partidos */}
-      {isPartido && (
-        <Card style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: colors.nv }}>Eventos del Partido</div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-            <select value={evForm.tipo} onChange={e => sEvForm({ ...evForm, tipo: e.target.value })} style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, background: cardBg, color: colors.nv }}>
-              {EVENTO_TIPOS.map(e => <option key={e.k} value={e.k}>{e.i} {e.l}</option>)}
-            </select>
-            <select value={evForm.jugadora_id} onChange={e => sEvForm({ ...evForm, jugadora_id: e.target.value })} style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, flex: 1, minWidth: 120, background: cardBg, color: colors.nv }}>
-              <option value="">Jugadora...</option>
-              {activeJugadoras.map(j => <option key={j.id} value={j.id}>{j.apellido}, {j.nombre}</option>)}
-            </select>
-            <input value={evForm.minuto} onChange={e => sEvForm({ ...evForm, minuto: e.target.value })} placeholder="Min" type="number" style={{ width: 50, padding: "6px 8px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, background: cardBg, color: colors.nv }} />
-            <Btn v="s" s="s" onClick={addEvento}>+</Btn>
-          </div>
-          {eventos.length === 0 ? <div style={{ fontSize: 11, color: colors.g4 }}>Sin eventos</div> : (
-            <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
-              {eventos.map(ev => {
-                const et = EVENTO_TIPOS.find(e => e.k === ev.tipo);
-                const j = jugadoras.find(j => j.id === ev.jugadora_id);
-                return (
-                  <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 6px", borderRadius: 4, background: isDark ? "rgba(255,255,255,.04)" : "#F9FAFB" }}>
-                    <span style={{ fontSize: 14 }}>{et?.i}</span>
-                    <span style={{ flex: 1, fontSize: 11, color: colors.nv }}>{j ? j.apellido + ", " + j.nombre : "?"}</span>
-                    {ev.minuto && <span style={{ fontSize: 10, color: colors.g4 }}>{ev.minuto}&apos;</span>}
-                    <button onClick={() => delEvento(ev.id)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: colors.rd }}>✕</button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
-      )}
 
       {/* Convocadas */}
       <Card>

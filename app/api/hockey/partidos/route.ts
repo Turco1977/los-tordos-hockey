@@ -60,7 +60,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const auth = await requireLevel(req, 2);
+  const auth = await requireLevel(req, 3);
   if (isAuthError(auth)) return authError(auth.error, auth.status);
 
   const id = req.nextUrl.searchParams.get("id");
