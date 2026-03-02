@@ -76,6 +76,26 @@ export async function PUT(req: NextRequest) {
       });
     }
 
+    // Notify directors when sent for approval
+    if (updates.estado === "pendiente") {
+      const { data: directors } = await sb.from("hockey_roles")
+        .select("user_id")
+        .in("role", ["director_deportivo", "directora_hockey"])
+        .eq("active", true);
+      if (directors?.length) {
+        const { data: sender } = await sb.from("profiles").select("first_name, last_name").eq("id", auth.user.id).single();
+        const senderName = sender ? `${sender.first_name} ${sender.last_name}` : "Un entrenador";
+        const notifs = directors.map(d => ({
+          user_id: d.user_id,
+          titulo: `LBF pendiente de aprobación`,
+          mensaje: `${senderName} envió "${data.nombre}" para aprobación`,
+          tipo: "lbf",
+          link: "lbf",
+        }));
+        await sb.from("notificaciones").insert(notifs);
+      }
+    }
+
     return NextResponse.json(data);
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

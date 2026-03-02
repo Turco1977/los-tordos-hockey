@@ -25,6 +25,7 @@ import AsistenciaManager from "@/components/main/AsistenciaManager";
 import PartidosManager from "@/components/main/PartidosManager";
 import HockeyCalendario from "@/components/main/HockeyCalendario";
 import ViajesManager from "@/components/main/ViajesManager";
+import NotificationBell from "@/components/main/NotificationBell";
 import type { Jugadora } from "@/lib/supabase/types";
 
 export default function Page() {
@@ -41,13 +42,13 @@ export default function Page() {
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" } | null>(null);
 
   const store = useStore();
-  const { user, profile, roles, activeRole, setUser, setProfile, setRoles, setActiveRole, jugadoras, lbfs, fetchJugadoras, fetchLBFs, fetchSesiones, fetchPartidos, fetchCalEventos, viajes, fetchViajes, fetchStaff } = store;
+  const { user, profile, roles, activeRole, setUser, setProfile, setRoles, setActiveRole, jugadoras, lbfs, fetchJugadoras, fetchLBFs, fetchSesiones, fetchPartidos, fetchCalEventos, viajes, fetchViajes, fetchStaff, notificaciones, fetchNotificaciones } = store;
 
   const userLevel = maxLevel(roles);
 
   const loadData = useCallback(async () => {
-    await Promise.all([fetchJugadoras(), fetchLBFs(), fetchSesiones(), fetchPartidos(), fetchCalEventos(), fetchViajes(), fetchStaff()]);
-  }, [fetchJugadoras, fetchLBFs, fetchSesiones, fetchPartidos, fetchCalEventos, fetchViajes, fetchStaff]);
+    await Promise.all([fetchJugadoras(), fetchLBFs(), fetchSesiones(), fetchPartidos(), fetchCalEventos(), fetchViajes(), fetchStaff(), fetchNotificaciones()]);
+  }, [fetchJugadoras, fetchLBFs, fetchSesiones, fetchPartidos, fetchCalEventos, fetchViajes, fetchStaff, fetchNotificaciones]);
 
   // Auth check
   useEffect(() => {
@@ -75,6 +76,7 @@ export default function Page() {
       .on("postgres_changes", { event: "*", schema: "public", table: "partidos" }, () => fetchPartidos())
       .on("postgres_changes", { event: "*", schema: "public", table: "calendario_eventos" }, () => fetchCalEventos())
       .on("postgres_changes", { event: "*", schema: "public", table: "viajes" }, () => fetchViajes())
+      .on("postgres_changes", { event: "*", schema: "public", table: "notificaciones" }, () => fetchNotificaciones())
       .subscribe();
     return () => { sb.removeChannel(ch); };
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -241,7 +243,10 @@ export default function Page() {
         <div style={{ display: "flex", minHeight: "100vh", background: theme.colors.g1, fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color: theme.colors.nv }}>
           <Sidebar tab={tab} onTab={t => { setTab(t as TabId); setPlayerView("list"); setSelPlayer(null); }} userLevel={userLevel} profile={profile} onLogout={handleLogout} onToggleTheme={theme.toggle} isDark={theme.isDark} mob={mob} activeRole={activeRole} />
           <main style={{ flex: 1, padding: mob ? "12px 8px 80px" : "20px 16px", width: "100%" }}>
-            <RoleSelector roles={roles} activeRole={activeRole} onSelect={setActiveRole} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <RoleSelector roles={roles} activeRole={activeRole} onSelect={setActiveRole} />
+              <NotificationBell notificaciones={notificaciones} onRefresh={fetchNotificaciones} onNav={(t) => { setTab(t as TabId); }} />
+            </div>
             {content()}
           </main>
         </div>

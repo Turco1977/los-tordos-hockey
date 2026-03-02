@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Jugadora, HockeyRole, LBF, LBFJugadora, Profile, AsistenciaSesion, AsistenciaRegistro, Partido, PartidoConvocada, PartidoEvento, CalendarioEvento, Viaje } from "@/lib/supabase/types";
+import type { Jugadora, HockeyRole, LBF, LBFJugadora, Profile, AsistenciaSesion, AsistenciaRegistro, Partido, PartidoConvocada, PartidoEvento, CalendarioEvento, Viaje, Notificacion } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/client";
 
 interface HockeyStore {
@@ -54,6 +54,11 @@ interface HockeyStore {
   viajesLoading: boolean;
   fetchViajes: () => Promise<void>;
   setViajes: (fn: (prev: Viaje[]) => Viaje[]) => void;
+
+  /* Notificaciones */
+  notificaciones: Notificacion[];
+  fetchNotificaciones: () => Promise<void>;
+  setNotificaciones: (fn: (prev: Notificacion[]) => Notificacion[]) => void;
 }
 
 export const useStore = create<HockeyStore>((set, get) => ({
@@ -136,4 +141,15 @@ export const useStore = create<HockeyStore>((set, get) => ({
     set({ viajes: (data || []) as Viaje[], viajesLoading: false });
   },
   setViajes: (fn) => set((s) => ({ viajes: fn(s.viajes) })),
+
+  /* Notificaciones */
+  notificaciones: [],
+  fetchNotificaciones: async () => {
+    const sb = createClient();
+    const user = get().user;
+    if (!user) return;
+    const { data } = await sb.from("notificaciones").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50);
+    set({ notificaciones: (data || []) as Notificacion[] });
+  },
+  setNotificaciones: (fn) => set((s) => ({ notificaciones: fn(s.notificaciones) })),
 }));

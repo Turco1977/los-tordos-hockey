@@ -109,6 +109,18 @@ export interface JugadoraHistorial {
   profile?: Profile;
 }
 
+/* ── Notificaciones ── */
+export interface Notificacion {
+  id: string;
+  user_id: string;
+  titulo: string;
+  mensaje: string;
+  tipo: "lbf" | "info" | "alerta";
+  link: string | null;
+  leida: boolean;
+  created_at: string;
+}
+
 /* ── Phase 2: Asistencia + Partidos + Calendario ── */
 export interface AsistenciaSesion {
   id: string;
