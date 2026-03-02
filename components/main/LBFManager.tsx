@@ -4,7 +4,7 @@ import { useC } from "@/lib/theme-context";
 import { Card, Btn, LbfBadge, Empty, Spinner, useMobile, Pager } from "@/components/ui";
 import { apiFetch } from "@/lib/api/apiFetch";
 import { DIVISIONES, RAMAS, LBF_ST, findEntrenadora } from "@/lib/constants";
-import { canAddToLBF, fullName } from "@/lib/mappers";
+import { fullName } from "@/lib/mappers";
 import { printLBF, shareLBFWhatsApp } from "@/lib/export";
 import { createClient } from "@/lib/supabase/client";
 import { paginate } from "@/lib/pagination";
@@ -93,15 +93,14 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
     const inLbf = new Set(lbfPlayers.map(p => p.jugadora_id));
     let list = jugadoras.filter(j => j.activa && !inLbf.has(j.id));
     if (search.trim()) {
+      // Search mode: search across ALL players
       const q = search.trim().toLowerCase();
       list = list.filter(j => `${j.apellido} ${j.nombre}`.toLowerCase().includes(q) || j.dni.includes(q));
+    } else {
+      // Default: show only players from this division/rama
+      list = list.filter(j => (j.division_efectiva || j.division_manual) === selLbf.division && j.rama === selLbf.rama);
     }
-    return list.sort((a, b) => {
-      const aMatch = ((a.division_efectiva || a.division_manual) === selLbf.division && a.rama === selLbf.rama) ? 0 : 1;
-      const bMatch = ((b.division_efectiva || b.division_manual) === selLbf.division && b.rama === selLbf.rama) ? 0 : 1;
-      if (aMatch !== bMatch) return aMatch - bMatch;
-      return a.apellido.localeCompare(b.apellido);
-    });
+    return list.sort((a, b) => a.apellido.localeCompare(b.apellido));
   }, [selLbf, jugadoras, lbfPlayers, search]);
 
   const filteredLbfs = useMemo(() => {
@@ -160,24 +159,18 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv }}>Disponibles ({available.length})</div>
               </div>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre o DNI..." style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, marginBottom: 8, boxSizing: "border-box" }} />
-              {available.length === 0 ? <div style={{ fontSize: 11, color: colors.g4 }}>{search ? "Sin resultados" : "No hay jugadoras disponibles"}</div> : (
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre o DNI (busca en todas las divisiones)..." style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, marginBottom: 8, boxSizing: "border-box" }} />
+              {available.length === 0 ? <div style={{ fontSize: 11, color: colors.g4 }}>{search ? "Sin resultados" : "No hay más jugadoras en esta división/rama"}</div> : (
                 <div style={{ maxHeight: 400, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
                   {available.map(j => {
-                    const check = canAddToLBF(j);
-                    const blocked = !check.ok;
-                    const divMatch = (j.division_efectiva || j.division_manual) === selLbf?.division && j.rama === selLbf?.rama;
+                    const otherDiv = (j.division_efectiva || j.division_manual) !== selLbf?.division || j.rama !== selLbf?.rama;
                     return (
-                      <div key={j.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", borderRadius: 6, border: "1px solid " + (blocked ? colors.rd + "40" : colors.g1), background: blocked ? colors.rd + "08" : "transparent", fontSize: 11, opacity: divMatch ? 1 : 0.6 }}>
+                      <div key={j.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", borderRadius: 6, border: "1px solid " + colors.g1, fontSize: 11 }}>
                         <div>
-                          <span style={{ color: blocked ? colors.g4 : colors.nv }}>{j.apellido}, {j.nombre}</span>
-                          {!divMatch && <span style={{ fontSize: 9, color: colors.yl, marginLeft: 4 }}>({j.rama} - {j.division_efectiva || j.division_manual || "Sin div."})</span>}
-                          {blocked && <div style={{ fontSize: 9, color: colors.rd, fontWeight: 600, marginTop: 1 }}>{check.reason}</div>}
+                          <span style={{ color: colors.nv }}>{j.apellido}, {j.nombre}</span>
+                          {otherDiv && <span style={{ fontSize: 9, color: colors.yl, marginLeft: 4 }}>({j.rama} - {j.division_efectiva || j.division_manual || "Sin div."})</span>}
                         </div>
-                        {blocked
-                          ? <span style={{ fontSize: 9, color: colors.rd, fontWeight: 600, flexShrink: 0, padding: "3px 8px" }}>Bloqueada</span>
-                          : <button onClick={() => addPlayer(j)} style={{ background: colors.gn, color: "#fff", border: "none", borderRadius: 4, padding: "3px 8px", fontSize: 10, cursor: "pointer", fontWeight: 600, flexShrink: 0 }}>+ Agregar</button>
-                        }
+                        <button onClick={() => addPlayer(j)} style={{ background: colors.gn, color: "#fff", border: "none", borderRadius: 4, padding: "3px 8px", fontSize: 10, cursor: "pointer", fontWeight: 600, flexShrink: 0 }}>+ Agregar</button>
                       </div>
                     );
                   })}
