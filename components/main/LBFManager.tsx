@@ -134,7 +134,7 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
   }
 
   if (view === "detail" && selLbf) {
-    const editable = selLbf.estado === LBF_ST.BORR;
+    const editable = selLbf.estado !== LBF_ST.RECH && userLevel <= 3;
     return (
       <div>
         <button onClick={() => { setView("list"); setSelLbf(null); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: colors.bl, fontWeight: 600, padding: 0, marginBottom: 8 }}>← Volver</button>
