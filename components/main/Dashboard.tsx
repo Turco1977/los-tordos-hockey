@@ -2,23 +2,29 @@
 import { useMemo, useState, useEffect } from "react";
 import { useC } from "@/lib/theme-context";
 import { Card, Ring, Spinner, useMobile } from "@/components/ui";
-import { DIVISIONES } from "@/lib/constants";
+import { DIVISIONES, CONVOCATORIA_TIPOS, RESULTADO_COLORS } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
-import type { Jugadora, LBF, Partido, PartidoEvento } from "@/lib/supabase/types";
+import type { Jugadora, LBF, Partido, PartidoEvento, PartidoConvocada } from "@/lib/supabase/types";
 
 const NON_COMP = ["Octava", "Novena", "Décima", "Pre Décima"];
+const fmtD = (d: string) => { if (!d) return "–"; const p = d.slice(0, 10).split("-"); return p[2] + "/" + p[1] + "/" + p[0]; };
 
 export default function Dashboard({ jugadoras, lbfs, partidos }: { jugadoras: Jugadora[]; lbfs: LBF[]; partidos: Partido[]; userLevel: number }) {
   const { colors, cardBg, isDark } = useC();
   const mob = useMobile();
   const [eventos, setEventos] = useState<PartidoEvento[]>([]);
+  const [convocadasAll, setConvocadasAll] = useState<PartidoConvocada[]>([]);
   const [loadingEv, setLoadingEv] = useState(true);
 
-  // Fetch all eventos for ranking
+  // Fetch all eventos + convocadas for rankings and participation stats
   useEffect(() => {
     const sb = createClient();
-    sb.from("partido_eventos").select("*").then(({ data }) => {
-      setEventos((data || []) as PartidoEvento[]);
+    Promise.all([
+      sb.from("partido_eventos").select("*"),
+      sb.from("partido_convocadas").select("*"),
+    ]).then(([evRes, convRes]) => {
+      setEventos((evRes.data || []) as PartidoEvento[]);
+      setConvocadasAll((convRes.data || []) as PartidoConvocada[]);
       setLoadingEv(false);
     });
   }, [partidos]);
@@ -36,18 +42,17 @@ export default function Dashboard({ jugadoras, lbfs, partidos }: { jugadoras: Ju
     const lbfAprobadas = lbfs.filter(l => l.estado === "aprobada").length;
     const lbfPendientes = lbfs.filter(l => l.estado === "pendiente").length;
 
-    // Non-competitive divisions
     const nonComp = activas.filter(j => NON_COMP.includes(j.division_efectiva || j.division_manual || "")).length;
     const pctNonComp = total ? Math.round(nonComp / total * 100) : 0;
 
-    // Altas/bajas del mes
     const now = new Date();
     const mesActual = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const altasMes = jugadoras.filter(j => j.fecha_alta && j.fecha_alta.startsWith(mesActual)).length;
     const bajasMes = jugadoras.filter(j => j.estado === "baja" && j.fecha_baja && j.fecha_baja.startsWith(mesActual)).length;
-
-    // Suspendidas
     const suspendidas = jugadoras.filter(j => j.estado === "suspendida").length;
+
+    const totalPartidos = partidos.filter(p => p.competencia === "partido").length;
+    const totalEntrenamientos = partidos.filter(p => p.competencia === "entrenamiento").length;
 
     return {
       total, byRama, certVig, socias, derecho, byDiv, maxDiv,
@@ -56,7 +61,7 @@ export default function Dashboard({ jugadoras, lbfs, partidos }: { jugadoras: Ju
       pctSocia: total ? Math.round(socias / total * 100) : 0,
       pctDerecho: total ? Math.round(derecho / total * 100) : 0,
       nonComp, pctNonComp, altasMes, bajasMes, suspendidas,
-      totalPartidos: partidos.length,
+      totalPartidos, totalEntrenamientos, totalConvocatorias: partidos.length,
     };
   }, [jugadoras, lbfs, partidos]);
 
@@ -76,15 +81,28 @@ export default function Dashboard({ jugadoras, lbfs, partidos }: { jugadoras: Ju
     return { goles: agg("gol"), amarillas: agg("amarilla"), rojas: agg("roja") };
   }, [eventos, jugadoras]);
 
+  // Player participation: how many convocatorias each player was in
+  const participation = useMemo(() => {
+    if (convocadasAll.length === 0) return [];
+    const jugMap = new Map(jugadoras.map(j => [j.id, j]));
+    const counts: Record<string, number> = {};
+    convocadasAll.forEach(c => { counts[c.jugadora_id] = (counts[c.jugadora_id] || 0) + 1; });
+    return Object.entries(counts)
+      .map(([id, count]) => ({ j: jugMap.get(id)!, count }))
+      .filter(x => x.j)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+  }, [convocadasAll, jugadoras]);
+
   const kpiData = [
     { k: "total", l: "Total Activas", v: stats.total, c: colors.nv },
     { k: "lbfOk", l: "LBF Aprobadas", v: stats.lbfAprobadas, c: colors.gn },
     { k: "lbfPe", l: "LBF Pendientes", v: stats.lbfPendientes, c: colors.yl },
-    { k: "partidos", l: "Partidos", v: stats.totalPartidos, c: colors.bl },
+    { k: "conv", l: "Convocatorias", v: stats.totalConvocatorias, c: colors.bl },
+    { k: "partidos", l: "Partidos", v: stats.totalPartidos, c: colors.pr },
+    { k: "entren", l: "Entrenamientos", v: stats.totalEntrenamientos, c: colors.gn },
     { k: "altas", l: "Altas del Mes", v: stats.altasMes, c: colors.gn },
     { k: "bajas", l: "Bajas del Mes", v: stats.bajasMes, c: colors.rd },
-    { k: "susp", l: "Suspendidas", v: stats.suspendidas, c: colors.yl },
-    { k: "noncomp", l: "No Competitivas", v: stats.nonComp, c: colors.pr },
   ];
 
   const track = isDark ? "rgba(255,255,255,.25)" : colors.g2;
@@ -107,6 +125,9 @@ export default function Dashboard({ jugadoras, lbfs, partidos }: { jugadoras: Ju
     </Card>
   );
 
+  // Recent convocatorias (last 5)
+  const recentConv = partidos.slice(0, 5);
+
   return (
     <div>
       <h2 style={{ margin: "0 0 16px", fontSize: mob ? 16 : 19, fontWeight: 800, color: colors.nv }}>Dashboard</h2>
@@ -121,7 +142,78 @@ export default function Dashboard({ jugadoras, lbfs, partidos }: { jugadoras: Ju
         ))}
       </div>
 
+      {/* Recent Convocatorias - full width */}
+      <Card style={{ padding: mob ? "10px 12px" : "14px 16px", marginBottom: mob ? 8 : 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: colors.nv, marginBottom: 10 }}>📣 Últimas Convocatorias</div>
+        {recentConv.length === 0 ? (
+          <div style={{ fontSize: 11, color: colors.g4 }}>No hay convocatorias registradas</div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill,minmax(280px,1fr))", gap: 8 }}>
+            {recentConv.map(p => {
+              const rc = RESULTADO_COLORS[p.resultado || ""] || { bg: colors.g2, c: colors.g5 };
+              const tipo = CONVOCATORIA_TIPOS.find(c => c.k === p.competencia);
+              const isP = p.competencia === "partido";
+              return (
+                <div key={p.id} style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid " + colors.g2, background: isDark ? "rgba(255,255,255,.03)" : "#FAFBFC" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: colors.nv }}>{fmtD(p.fecha)}</span>
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      {tipo && <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 8, background: isP ? "#DBEAFE" : "#F3E8FF", color: isP ? "#1D4ED8" : "#7C3AED", fontWeight: 600 }}>{tipo.i} {tipo.l}</span>}
+                      {p.resultado && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: rc.bg, color: rc.c, fontWeight: 700 }}>{p.resultado} {p.goles_favor}-{p.goles_contra}</span>}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: colors.nv }}>{isP ? `vs ${p.rival}` : "🏋️ Entrenamiento"}</div>
+                  <div style={{ fontSize: 10, color: colors.g5, marginTop: 2 }}>{p.division} • Rama {p.rama} • {p.sede === "local" ? "🏠 Local" : "✈️ Visitante"}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
       <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: mob ? 8 : 14 }}>
+        {/* Player Participation - most convoked */}
+        <Card style={{ padding: mob ? "10px 12px" : "14px 16px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: colors.nv, marginBottom: 8 }}>📣 Participación en Convocatorias</div>
+          {loadingEv ? <Spinner size={20} /> : participation.length === 0 ? (
+            <div style={{ fontSize: 11, color: colors.g4 }}>Sin datos</div>
+          ) : participation.map((x, i) => (
+            <div key={x.j.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: i < participation.length - 1 ? "1px solid " + colors.g1 : "none" }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: colors.bl, minWidth: 22, textAlign: "center" }}>{i + 1}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: colors.nv }}>{x.j.apellido}, {x.j.nombre}</div>
+                <div style={{ fontSize: 10, color: colors.g4 }}>{x.j.division_efectiva || x.j.division_manual} · Rama {x.j.rama}</div>
+              </div>
+              <span style={{ fontSize: 16, fontWeight: 800, color: colors.bl }}>{x.count}</span>
+            </div>
+          ))}
+        </Card>
+
+        {/* Resumen partidos */}
+        <Card style={{ padding: mob ? "10px 12px" : "14px 16px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: colors.nv, marginBottom: 8 }}>Resumen Partidos</div>
+          {partidos.filter(p => p.competencia === "partido").length === 0 ? (
+            <div style={{ fontSize: 11, color: colors.g4 }}>Sin partidos registrados</div>
+          ) : (() => {
+            const matches = partidos.filter(p => p.competencia === "partido");
+            const v = matches.filter(p => p.resultado === "V").length;
+            const d = matches.filter(p => p.resultado === "D").length;
+            const e = matches.filter(p => p.resultado === "E").length;
+            const gf = matches.reduce((s, p) => s + (p.goles_favor || 0), 0);
+            const gc = matches.reduce((s, p) => s + (p.goles_contra || 0), 0);
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, textAlign: "center" }}>
+                <div><div style={{ fontSize: 20, fontWeight: 800, color: colors.gn }}>{v}</div><div style={{ fontSize: 10, color: colors.g4 }}>Victorias</div></div>
+                <div><div style={{ fontSize: 20, fontWeight: 800, color: colors.yl }}>{e}</div><div style={{ fontSize: 10, color: colors.g4 }}>Empates</div></div>
+                <div><div style={{ fontSize: 20, fontWeight: 800, color: colors.rd }}>{d}</div><div style={{ fontSize: 10, color: colors.g4 }}>Derrotas</div></div>
+                <div style={{ gridColumn: "1/-1", borderTop: "1px solid " + colors.g1, paddingTop: 8, marginTop: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: colors.nv }}>{gf} GF · {gc} GC · Dif: {gf - gc >= 0 ? "+" : ""}{gf - gc}</span>
+                </div>
+              </div>
+            );
+          })()}
+        </Card>
+
         {/* Bar Chart: Jugadoras por División */}
         <Card style={{ padding: mob ? "10px 12px" : "14px 16px" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: colors.nv, marginBottom: 8 }}>Jugadoras por División</div>
@@ -213,30 +305,6 @@ export default function Dashboard({ jugadoras, lbfs, partidos }: { jugadoras: Ju
         {rankCard("Goleadoras", "⚽", ranking.goles, colors.gn)}
         {rankCard("Tarjetas Amarillas", "🟡", ranking.amarillas, colors.yl)}
         {rankCard("Tarjetas Rojas", "🔴", ranking.rojas, colors.rd)}
-
-        {/* Resumen partidos */}
-        <Card style={{ padding: mob ? "10px 12px" : "14px 16px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: colors.nv, marginBottom: 8 }}>Resumen Partidos</div>
-          {partidos.length === 0 ? (
-            <div style={{ fontSize: 11, color: colors.g4 }}>Sin partidos registrados</div>
-          ) : (() => {
-            const v = partidos.filter(p => p.resultado === "V").length;
-            const d = partidos.filter(p => p.resultado === "D").length;
-            const e = partidos.filter(p => p.resultado === "E").length;
-            const gf = partidos.reduce((s, p) => s + (p.goles_favor || 0), 0);
-            const gc = partidos.reduce((s, p) => s + (p.goles_contra || 0), 0);
-            return (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, textAlign: "center" }}>
-                <div><div style={{ fontSize: 20, fontWeight: 800, color: colors.gn }}>{v}</div><div style={{ fontSize: 10, color: colors.g4 }}>Victorias</div></div>
-                <div><div style={{ fontSize: 20, fontWeight: 800, color: colors.yl }}>{e}</div><div style={{ fontSize: 10, color: colors.g4 }}>Empates</div></div>
-                <div><div style={{ fontSize: 20, fontWeight: 800, color: colors.rd }}>{d}</div><div style={{ fontSize: 10, color: colors.g4 }}>Derrotas</div></div>
-                <div style={{ gridColumn: "1/-1", borderTop: "1px solid " + colors.g1, paddingTop: 8, marginTop: 4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: colors.nv }}>{gf} GF · {gc} GC · Dif: {gf - gc >= 0 ? "+" : ""}{gf - gc}</span>
-                </div>
-              </div>
-            );
-          })()}
-        </Card>
       </div>
     </div>
   );

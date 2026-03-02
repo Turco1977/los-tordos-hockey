@@ -218,6 +218,11 @@ export const COMPETENCIA_TIPOS = [
   { k: "otro", l: "Otro" },
 ] as const;
 
+export const CONVOCATORIA_TIPOS = [
+  { k: "partido", l: "Partido", i: "⚽" },
+  { k: "entrenamiento", l: "Entrenamiento", i: "🏋️" },
+] as const;
+
 export const EVENTO_TIPOS = [
   { k: "gol", l: "Gol", i: "⚽", c: "#10B981" },
   { k: "amarilla", l: "Amarilla", i: "🟡", c: "#F59E0B" },
@@ -265,7 +270,7 @@ export const TABS = [
   { id: "viajes", l: "Viajes", i: "🚌", minLv: 3 },
   { id: "organigrama", l: "Organigrama", i: "🏗️", minLv: 3 },
   { id: "asistencia", l: "Asistencia", i: "🏑", minLv: 3 },
-  { id: "partidos", l: "Partidos", i: "⚽", minLv: 3 },
+  { id: "partidos", l: "Convocatorias", i: "📣", minLv: 3 },
   { id: "calendario", l: "Calendario", i: "📅", minLv: 3 },
 ] as const;
 export type TabId = typeof TABS[number]["id"];

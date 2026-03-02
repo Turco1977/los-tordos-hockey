@@ -1,5 +1,6 @@
-import type { Jugadora, LBF, LBFJugadora } from "@/lib/supabase/types";
+import type { Jugadora, LBF, LBFJugadora, Partido } from "@/lib/supabase/types";
 import { fullName } from "@/lib/mappers";
+import { CONVOCATORIA_TIPOS } from "@/lib/constants";
 
 /* ── CSV Export ── */
 export function jugadorasToCSV(jugadoras: Jugadora[]): string {
@@ -85,6 +86,28 @@ export function shareLBFWhatsApp(lbf: LBF, jugadoras: (LBFJugadora & { jugadora?
       text += `${i + 1}. ${j.jugadora ? fullName(j.jugadora) : "-"}${j.numero_camiseta ? ` (#${j.numero_camiseta})` : ""}\n`;
     });
   }
+  text += `\n_Los Tordos Hockey - ${new Date().toLocaleDateString("es-AR")}_`;
+
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+}
+
+/* ── Share Convocatoria via WhatsApp ── */
+export function shareConvocatoriaWhatsApp(partido: Partido, convocadas: Jugadora[]) {
+  const tipo = CONVOCATORIA_TIPOS.find(c => c.k === partido.competencia);
+  const tipoLabel = tipo ? `${tipo.i} ${tipo.l}` : partido.competencia;
+  const fmtD = (d: string) => { const p = d.slice(0, 10).split("-"); return p[2] + "/" + p[1] + "/" + p[0]; };
+
+  let text = `📣 *Convocatoria*\n`;
+  text += `*${tipoLabel}*\n`;
+  if (partido.rival) text += `vs ${partido.rival}\n`;
+  text += `📅 ${fmtD(partido.fecha)}\n`;
+  text += `${partido.division} - Rama ${partido.rama}\n`;
+  text += `${partido.sede === "local" ? "🏠 Local" : "✈️ Visitante"}\n`;
+  if (partido.notas) text += `\n📝 ${partido.notas}\n`;
+  text += `\n*Convocadas (${convocadas.length}):*\n`;
+  convocadas.forEach((j, i) => {
+    text += `${i + 1}. ${fullName(j)}${j.posicion ? ` (${j.posicion})` : ""}\n`;
+  });
   text += `\n_Los Tordos Hockey - ${new Date().toLocaleDateString("es-AR")}_`;
 
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
