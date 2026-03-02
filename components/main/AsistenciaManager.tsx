@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { DIVISIONES, RAMAS, TIPO_ACTIVIDAD } from "@/lib/constants";
 import { Btn, Card, Ring } from "@/components/ui";
+import { apiFetch } from "@/lib/api/apiFetch";
 import { useC } from "@/lib/theme-context";
 import { useStore } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
@@ -53,7 +54,7 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
 
   // Load registros when opening a session
   const loadRegistros = useCallback(async (sesionId: string) => {
-    const res = await fetch("/api/hockey/asistencia/registros?sesion_id=" + sesionId);
+    const res = await apiFetch("/api/hockey/asistencia/registros?sesion_id=" + sesionId);
     const data = await res.json();
     if (Array.isArray(data)) setRegistros(() => data);
   }, [setRegistros]);
@@ -62,9 +63,8 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
 
   const crearSesion = async () => {
     try {
-      const res = await fetch("/api/hockey/asistencia", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, created_by: user?.id }),
+      const res = await apiFetch("/api/hockey/asistencia", {
+        method: "POST", body: JSON.stringify({ ...form, created_by: user?.id }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -76,9 +76,8 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
 
   const genQR = async () => {
     try {
-      const res = await fetch("/api/hockey/asistencia/qr", {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sesion_id: selSesion.id }),
+      const res = await apiFetch("/api/hockey/asistencia/qr", {
+        method: "PUT", body: JSON.stringify({ sesion_id: selSesion.id }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -108,9 +107,8 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
 
   const guardarAsistencia = async () => {
     try {
-      const res = await fetch("/api/hockey/asistencia/registros", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sesion_id: selSesion.id, registros: registros.filter(r => r.presente) }),
+      const res = await apiFetch("/api/hockey/asistencia/registros", {
+        method: "POST", body: JSON.stringify({ sesion_id: selSesion.id, registros: registros.filter(r => r.presente) }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -122,9 +120,8 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
   const cerrarSesion = async () => {
     await guardarAsistencia();
     try {
-      const res = await fetch("/api/hockey/asistencia", {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: selSesion.id, estado: "cerrada" }),
+      const res = await apiFetch("/api/hockey/asistencia", {
+        method: "PUT", body: JSON.stringify({ id: selSesion.id, estado: "cerrada" }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useC } from "@/lib/theme-context";
 import { Card, Btn, Empty, useMobile } from "@/components/ui";
+import { apiFetch } from "@/lib/api/apiFetch";
 import { HOCKEY_ROLES, HOCKEY_ROLE_KEYS, DIVISIONES, RAMAS } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import type { HockeyRole } from "@/lib/supabase/types";
@@ -21,7 +22,7 @@ export default function StaffManager({ staff, onRefresh, userLevel }: { staff: H
 
   const create = async () => {
     setErr(""); setSaving(true);
-    const res = await fetch("/api/admin/create-user", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+    const res = await apiFetch("/api/admin/create-user", { method: "POST", body: JSON.stringify(form) });
     const data = await res.json();
     setSaving(false);
     if (data.error) { setErr(data.error); return; }

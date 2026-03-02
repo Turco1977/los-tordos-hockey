@@ -2,6 +2,7 @@
 import { useState, useMemo } from "react";
 import { useC } from "@/lib/theme-context";
 import { Card, Btn, LbfBadge, Empty, Spinner, useMobile, Pager } from "@/components/ui";
+import { apiFetch } from "@/lib/api/apiFetch";
 import { DIVISIONES, RAMAS, LBF_ST } from "@/lib/constants";
 import { canAddToLBF, fullName } from "@/lib/mappers";
 import { printLBF, shareLBFWhatsApp } from "@/lib/export";
@@ -33,7 +34,7 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
 
   const createLBF = async () => {
     setSaving(true);
-    const res = await fetch("/api/hockey/lbf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, creado_por: userId }) });
+    const res = await apiFetch("/api/hockey/lbf", { method: "POST", body: JSON.stringify({ ...form, creado_por: userId }) });
     const data = await res.json();
     setSaving(false);
     if (data.error) return alert(data.error);
@@ -62,7 +63,7 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
 
   const updateEstado = async (estado: string) => {
     if (!selLbf) return;
-    await fetch("/api/hockey/lbf", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: selLbf.id, estado, _user_id: userId, _action: `estado_${estado}` }) });
+    await apiFetch("/api/hockey/lbf", { method: "PUT", body: JSON.stringify({ id: selLbf.id, estado, _user_id: userId, _action: `estado_${estado}` }) });
     onRefresh();
     setSelLbf({ ...selLbf, estado: estado as any });
   };
@@ -70,7 +71,7 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
   const deleteLBF = async () => {
     if (!selLbf) return;
     if (!confirm(`¿Eliminar "${selLbf.nombre}"? Esta acción no se puede deshacer.`)) return;
-    const res = await fetch("/api/hockey/lbf", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: selLbf.id }) });
+    const res = await apiFetch("/api/hockey/lbf", { method: "DELETE", body: JSON.stringify({ id: selLbf.id }) });
     const data = await res.json();
     if (data.error) return alert(data.error);
     onRefresh();

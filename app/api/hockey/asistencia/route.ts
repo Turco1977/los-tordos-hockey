@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireLevel, isAuthError, authError, validateBody } from "@/lib/api/authServer";
+import { SesionCreateSchema, SesionUpdateSchema } from "@/lib/api/schemas";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const sb = createAdminClient();
   const { data, error } = await sb.from("asistencia_sesiones").select("*").order("fecha", { ascending: false }).limit(100);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -10,7 +12,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireLevel(req, 3);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
+
     const body = await req.json();
+    const v = validateBody(SesionCreateSchema, { ...body, created_by: auth.user.id });
+    if ("error" in v) return authError(v.error, v.status);
+
     const sb = createAdminClient();
     const { data, error } = await sb.from("asistencia_sesiones").insert({
       fecha: body.fecha,
@@ -19,7 +27,7 @@ export async function POST(req: NextRequest) {
       tipo_actividad: body.tipo_actividad,
       notas: body.notas || null,
       estado: "abierta",
-      created_by: body.created_by,
+      created_by: auth.user.id,
     }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json(data);
@@ -30,7 +38,13 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const auth = await requireLevel(req, 3);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
+
     const body = await req.json();
+    const v = validateBody(SesionUpdateSchema, body);
+    if ("error" in v) return authError(v.error, v.status);
+
     const { id, ...updates } = body;
     if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
     const sb = createAdminClient();

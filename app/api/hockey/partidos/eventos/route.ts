@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireLevel, isAuthError, authError, validateBody } from "@/lib/api/authServer";
+import { EventoCreateSchema } from "@/lib/api/schemas";
 
 export async function GET(req: NextRequest) {
   const partidoId = req.nextUrl.searchParams.get("partido_id");
@@ -12,7 +14,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireLevel(req, 3);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
+
     const body = await req.json();
+    const v = validateBody(EventoCreateSchema, body);
+    if ("error" in v) return authError(v.error, v.status);
+
     const sb = createAdminClient();
     const { data, error } = await sb.from("partido_eventos").insert({
       partido_id: body.partido_id,
@@ -35,6 +43,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await requireLevel(req, 3);
+  if (isAuthError(auth)) return authError(auth.error, auth.status);
+
   const id = req.nextUrl.searchParams.get("id");
   const partidoId = req.nextUrl.searchParams.get("partido_id");
   if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });

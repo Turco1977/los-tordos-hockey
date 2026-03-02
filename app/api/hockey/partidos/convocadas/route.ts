@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireLevel, isAuthError, authError, validateBody } from "@/lib/api/authServer";
+import { ConvocadasSchema } from "@/lib/api/schemas";
 
 export async function GET(req: NextRequest) {
   const partidoId = req.nextUrl.searchParams.get("partido_id");
@@ -12,8 +14,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { partido_id, jugadoras } = await req.json();
-    if (!partido_id || !jugadoras) return NextResponse.json({ error: "partido_id y jugadoras requeridos" }, { status: 400 });
+    const auth = await requireLevel(req, 3);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
+
+    const body = await req.json();
+    const v = validateBody(ConvocadasSchema, body);
+    if ("error" in v) return authError(v.error, v.status);
+
+    const { partido_id, jugadoras } = v.data;
     const sb = createAdminClient();
     // Replace: delete existing + insert new
     await sb.from("partido_convocadas").delete().eq("partido_id", partido_id);
@@ -34,6 +42,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await requireLevel(req, 3);
+  if (isAuthError(auth)) return authError(auth.error, auth.status);
+
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
   const sb = createAdminClient();

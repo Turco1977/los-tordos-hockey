@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { DIVISIONES, RAMAS, COMPETENCIA_TIPOS, EVENTO_TIPOS, RESULTADO_COLORS } from "@/lib/constants";
 import { Btn, Card } from "@/components/ui";
+import { apiFetch } from "@/lib/api/apiFetch";
 import { useC } from "@/lib/theme-context";
 import { useStore } from "@/lib/store";
 
@@ -27,8 +28,8 @@ export default function PartidosManager({ user, mob, showT }: any) {
     sSel(p);
     sView("detail");
     const [cRes, eRes] = await Promise.all([
-      fetch("/api/hockey/partidos/convocadas?partido_id=" + p.id),
-      fetch("/api/hockey/partidos/eventos?partido_id=" + p.id),
+      apiFetch("/api/hockey/partidos/convocadas?partido_id=" + p.id),
+      apiFetch("/api/hockey/partidos/eventos?partido_id=" + p.id),
     ]);
     sConvocadas(await cRes.json());
     sEventos(await eRes.json());
@@ -38,9 +39,8 @@ export default function PartidosManager({ user, mob, showT }: any) {
   const crearPartido = async () => {
     if (!form.rival.trim()) { showT("Ingresá el rival", "err"); return; }
     try {
-      const res = await fetch("/api/hockey/partidos", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, created_by: user?.id }),
+      const res = await apiFetch("/api/hockey/partidos", {
+        method: "POST", body: JSON.stringify({ ...form, created_by: user?.id }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -53,9 +53,8 @@ export default function PartidosManager({ user, mob, showT }: any) {
   // Update score
   const updateScore = async (field: string, value: number) => {
     try {
-      const res = await fetch("/api/hockey/partidos", {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: sel.id, [field]: Math.max(0, value), resultado: calcResultado(field === "goles_favor" ? value : sel.goles_favor, field === "goles_contra" ? value : sel.goles_contra) }),
+      const res = await apiFetch("/api/hockey/partidos", {
+        method: "PUT", body: JSON.stringify({ id: sel.id, [field]: Math.max(0, value), resultado: calcResultado(field === "goles_favor" ? value : sel.goles_favor, field === "goles_contra" ? value : sel.goles_contra) }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -70,16 +69,15 @@ export default function PartidosManager({ user, mob, showT }: any) {
   const addEvento = async () => {
     if (!evForm.jugadora_id) { showT("Seleccioná jugadora", "err"); return; }
     try {
-      const res = await fetch("/api/hockey/partidos/eventos", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ partido_id: sel.id, ...evForm, minuto: evForm.minuto ? parseInt(evForm.minuto) : null }),
+      const res = await apiFetch("/api/hockey/partidos/eventos", {
+        method: "POST", body: JSON.stringify({ partido_id: sel.id, ...evForm, minuto: evForm.minuto ? parseInt(evForm.minuto) : null }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       sEventos(p => [...p, data]);
       sEvForm({ tipo: "gol", jugadora_id: "", minuto: "" });
       // Refresh partido for score update
-      const pRes = await fetch("/api/hockey/partidos");
+      const pRes = await apiFetch("/api/hockey/partidos");
       const all = await pRes.json();
       if (Array.isArray(all)) {
         setPartidos(() => all);
@@ -93,9 +91,9 @@ export default function PartidosManager({ user, mob, showT }: any) {
   // Delete event
   const delEvento = async (id: string) => {
     try {
-      await fetch("/api/hockey/partidos/eventos?id=" + id + "&partido_id=" + sel.id, { method: "DELETE" });
+      await apiFetch("/api/hockey/partidos/eventos?id=" + id + "&partido_id=" + sel.id, { method: "DELETE" });
       sEventos(p => p.filter(e => e.id !== id));
-      const pRes = await fetch("/api/hockey/partidos");
+      const pRes = await apiFetch("/api/hockey/partidos");
       const all = await pRes.json();
       if (Array.isArray(all)) {
         setPartidos(() => all);
@@ -108,9 +106,8 @@ export default function PartidosManager({ user, mob, showT }: any) {
   // Save convocadas
   const saveConvocadas = async (ids: string[]) => {
     try {
-      const res = await fetch("/api/hockey/partidos/convocadas", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ partido_id: sel.id, jugadoras: ids.map(id => ({ jugadora_id: id, titular: true })) }),
+      const res = await apiFetch("/api/hockey/partidos/convocadas", {
+        method: "POST", body: JSON.stringify({ partido_id: sel.id, jugadoras: ids.map(id => ({ jugadora_id: id, titular: true })) }),
       });
       const data = await res.json();
       if (Array.isArray(data)) sConvocadas(data);

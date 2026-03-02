@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireLevel, isAuthError, authError, validateBody } from "@/lib/api/authServer";
+import { CalendarioCreateSchema, CalendarioUpdateSchema } from "@/lib/api/schemas";
 
 export async function GET() {
   const sb = createAdminClient();
@@ -10,7 +12,13 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireLevel(req, 3);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
+
     const body = await req.json();
+    const v = validateBody(CalendarioCreateSchema, { ...body, created_by: auth.user.id });
+    if ("error" in v) return authError(v.error, v.status);
+
     const sb = createAdminClient();
     const { data, error } = await sb.from("calendario_eventos").insert({
       titulo: body.titulo,
@@ -24,7 +32,7 @@ export async function POST(req: NextRequest) {
       recurrencia_fin: body.recurrencia_fin || null,
       sesion_id: body.sesion_id || null,
       partido_id: body.partido_id || null,
-      created_by: body.created_by,
+      created_by: auth.user.id,
     }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json(data);
@@ -35,7 +43,13 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const auth = await requireLevel(req, 3);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
+
     const body = await req.json();
+    const v = validateBody(CalendarioUpdateSchema, body);
+    if ("error" in v) return authError(v.error, v.status);
+
     const { id, ...updates } = body;
     if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
     const sb = createAdminClient();
@@ -48,6 +62,9 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await requireLevel(req, 2);
+  if (isAuthError(auth)) return authError(auth.error, auth.status);
+
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
   const sb = createAdminClient();

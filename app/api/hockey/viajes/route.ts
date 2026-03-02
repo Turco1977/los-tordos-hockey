@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireLevel, isAuthError, authError, validateBody } from "@/lib/api/authServer";
+import { ViajeCreateSchema, ViajeUpdateSchema } from "@/lib/api/schemas";
 
 export async function GET() {
   const sb = createAdminClient();
@@ -10,9 +12,16 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireLevel(req, 3);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
+
     const body = await req.json();
+    const v = validateBody(ViajeCreateSchema, body);
+    if ("error" in v) return authError(v.error, v.status);
+
     const sb = createAdminClient();
-    const { data, error } = await sb.from("viajes").insert(body).select().single();
+    const insertData = { ...body, creado_por: auth.user.id };
+    const { data, error } = await sb.from("viajes").insert(insertData).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
     // Audit
@@ -20,7 +29,7 @@ export async function POST(req: NextRequest) {
       viaje_id: data.id,
       accion: "creado",
       detalle: `Viaje a "${data.destino}" creado`,
-      user_id: body.creado_por,
+      user_id: auth.user.id,
     });
 
     return NextResponse.json(data);
@@ -31,15 +40,21 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const auth = await requireLevel(req, 3);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
+
     const body = await req.json();
+    const v = validateBody(ViajeUpdateSchema, body);
+    if ("error" in v) return authError(v.error, v.status);
+
     const { id, _user_id, _action, ...updates } = body;
     if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
 
     const sb = createAdminClient();
 
-    // If approving, set aprobado_por and aprobado_at
-    if (updates.estado === "aprobado" && _user_id) {
-      updates.aprobado_por = _user_id;
+    // If approving, set aprobado_por and aprobado_at from verified user
+    if (updates.estado === "aprobado") {
+      updates.aprobado_por = auth.user.id;
       updates.aprobado_at = new Date().toISOString();
     }
 
@@ -47,12 +62,12 @@ export async function PUT(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
     // Audit
-    if (_user_id && _action) {
+    if (_action) {
       await sb.from("viaje_historial").insert({
         viaje_id: id,
         accion: _action,
         detalle: updates.estado ? `Estado cambiado a ${updates.estado}` : _action,
-        user_id: _user_id,
+        user_id: auth.user.id,
       });
     }
 
@@ -64,6 +79,9 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const auth = await requireLevel(req, 2);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
+
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
     const sb = createAdminClient();

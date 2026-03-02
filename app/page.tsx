@@ -5,6 +5,7 @@ import { ThemeCtx } from "@/lib/theme-context";
 import { useStore } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { fetchMyRoles, maxLevel } from "@/lib/api/auth";
+import { apiFetch } from "@/lib/api/apiFetch";
 import { useMobile, Toast, Spinner } from "@/components/ui";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import type { TabId } from "@/lib/constants";
@@ -182,7 +183,7 @@ export default function Page() {
       const body = isEdit
         ? { id: selPlayer!.id, ...data, _user_id: user?.id, _changes: getChanges(selPlayer!, data) }
         : { ...data, _user_id: user?.id };
-      const res = await fetch(url, { method: isEdit ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const res = await apiFetch(url, { method: isEdit ? "PUT" : "POST", body: JSON.stringify(body) });
       const result = await res.json();
       if (result.error) throw new Error(result.error);
       setToast({ msg: isEdit ? "Jugadora actualizada" : "Jugadora creada", type: "ok" });

@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useC } from "@/lib/theme-context";
 import { Card, Btn, Empty, useMobile, Pager } from "@/components/ui";
+import { apiFetch } from "@/lib/api/apiFetch";
 import { VIAJE_ST, VIAJE_SC, VIAJE_MOTIVOS, HOCKEY_ROLES } from "@/lib/constants";
 import { canAddToViaje, fullName } from "@/lib/mappers";
 import { createClient } from "@/lib/supabase/client";
@@ -44,7 +45,7 @@ export default function ViajesManager({ jugadoras, viajes, userId, userLevel, on
 
   const createViaje = async () => {
     setSaving(true);
-    const res = await fetch("/api/hockey/viajes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, creado_por: userId }) });
+    const res = await apiFetch("/api/hockey/viajes", { method: "POST", body: JSON.stringify({ ...form, creado_por: userId }) });
     const data = await res.json();
     setSaving(false);
     if (data.error) return alert(data.error);
@@ -84,7 +85,7 @@ export default function ViajesManager({ jugadoras, viajes, userId, userLevel, on
 
   const updateEstado = async (estado: string) => {
     if (!selViaje) return;
-    await fetch("/api/hockey/viajes", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: selViaje.id, estado, _user_id: userId, _action: `estado_${estado}` }) });
+    await apiFetch("/api/hockey/viajes", { method: "PUT", body: JSON.stringify({ id: selViaje.id, estado, _user_id: userId, _action: `estado_${estado}` }) });
     onRefresh();
     setSelViaje({ ...selViaje, estado: estado as any });
   };
@@ -92,7 +93,7 @@ export default function ViajesManager({ jugadoras, viajes, userId, userLevel, on
   const deleteViaje = async () => {
     if (!selViaje) return;
     if (!confirm(`¿Eliminar viaje a "${selViaje.destino}"? Esta acción no se puede deshacer.`)) return;
-    const res = await fetch("/api/hockey/viajes", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: selViaje.id }) });
+    const res = await apiFetch("/api/hockey/viajes", { method: "DELETE", body: JSON.stringify({ id: selViaje.id }) });
     const data = await res.json();
     if (data.error) return alert(data.error);
     onRefresh();

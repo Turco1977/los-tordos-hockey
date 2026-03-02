@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireLevel, isAuthError, authError, validateBody } from "@/lib/api/authServer";
+import { QRScanSchema, QRGenerateSchema } from "@/lib/api/schemas";
 import crypto from "crypto";
 
-// GET: validate QR token (public)
+// GET: validate QR token (PUBLIC — no auth)
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
   if (!token) return NextResponse.json({ error: "token requerido" }, { status: 400 });
@@ -15,11 +17,14 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ sesion: data });
 }
 
-// POST: register attendance by DNI (public)
+// POST: register attendance by DNI (PUBLIC — no auth, Zod validated)
 export async function POST(req: NextRequest) {
   try {
-    const { token, dni } = await req.json();
-    if (!token || !dni) return NextResponse.json({ error: "token y dni requeridos" }, { status: 400 });
+    const body = await req.json();
+    const v = validateBody(QRScanSchema, body);
+    if ("error" in v) return authError(v.error, v.status);
+
+    const { token, dni } = v.data;
     const sb = createAdminClient();
     // Validate session
     const { data: sesion } = await sb.from("asistencia_sesiones").select("*").eq("qr_token", token).eq("estado", "abierta").single();
@@ -47,15 +52,20 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PUT: generate QR token for a session
+// PUT: generate QR token for a session (auth required, nivel 1-3)
 export async function PUT(req: NextRequest) {
   try {
-    const { sesion_id } = await req.json();
-    if (!sesion_id) return NextResponse.json({ error: "sesion_id requerido" }, { status: 400 });
+    const auth = await requireLevel(req, 3);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
+
+    const body = await req.json();
+    const v = validateBody(QRGenerateSchema, body);
+    if ("error" in v) return authError(v.error, v.status);
+
     const sb = createAdminClient();
     const token = crypto.randomUUID();
     const expires = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 min
-    const { data, error } = await sb.from("asistencia_sesiones").update({ qr_token: token, qr_expires_at: expires }).eq("id", sesion_id).select().single();
+    const { data, error } = await sb.from("asistencia_sesiones").update({ qr_token: token, qr_expires_at: expires }).eq("id", v.data.sesion_id).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json(data);
   } catch (e: any) {

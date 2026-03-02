@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireLevel, isAuthError, authError, validateBody } from "@/lib/api/authServer";
+import { CreateUserSchema } from "@/lib/api/schemas";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { email, password, first_name, last_name, role, divisiones, ramas } = body;
+    // Only Director Deportivo (level 1) can create users
+    const auth = await requireLevel(req, 1);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
 
-    if (!email || !password || !role) {
-      return NextResponse.json({ error: "Email, password y role son requeridos" }, { status: 400 });
-    }
+    const body = await req.json();
+    const v = validateBody(CreateUserSchema, body);
+    if ("error" in v) return authError(v.error, v.status);
+
+    const { email, password, first_name, last_name, role, divisiones, ramas } = body;
 
     const sb = createAdminClient();
 

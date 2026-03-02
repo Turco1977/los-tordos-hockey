@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireLevel, isAuthError, authError, validateBody } from "@/lib/api/authServer";
+import { RegistrosBulkSchema } from "@/lib/api/schemas";
 
 export async function GET(req: NextRequest) {
   const sesionId = req.nextUrl.searchParams.get("sesion_id");
@@ -12,8 +14,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { sesion_id, registros } = await req.json();
-    if (!sesion_id || !registros) return NextResponse.json({ error: "sesion_id y registros requeridos" }, { status: 400 });
+    const auth = await requireLevel(req, 3);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
+
+    const body = await req.json();
+    const v = validateBody(RegistrosBulkSchema, body);
+    if ("error" in v) return authError(v.error, v.status);
+
+    const { sesion_id, registros } = v.data;
     const sb = createAdminClient();
     // Upsert: delete existing + insert new
     await sb.from("asistencia_registros").delete().eq("sesion_id", sesion_id);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 
+// GET: auth handled by middleware (any authenticated user)
 export async function GET(req: NextRequest) {
   const sb = createAdminClient();
   const url = new URL(req.url);

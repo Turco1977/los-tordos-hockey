@@ -2,6 +2,7 @@
 import { useState, useMemo } from "react";
 import { DIVISIONES, RAMAS, CALENDARIO_TIPOS } from "@/lib/constants";
 import { Btn, Card } from "@/components/ui";
+import { apiFetch } from "@/lib/api/apiFetch";
 import { useC } from "@/lib/theme-context";
 import { useStore } from "@/lib/store";
 
@@ -70,9 +71,8 @@ export default function HockeyCalendario({ user, mob, showT, onNavAsist, onNavPa
   const crear = async () => {
     if (!form.titulo.trim()) { showT("Ingresá un título", "err"); return; }
     try {
-      const res = await fetch("/api/hockey/calendario", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, created_by: user?.id }),
+      const res = await apiFetch("/api/hockey/calendario", {
+        method: "POST", body: JSON.stringify({ ...form, created_by: user?.id }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -86,7 +86,7 @@ export default function HockeyCalendario({ user, mob, showT, onNavAsist, onNavPa
   // Delete event
   const del = async (id: string) => {
     try {
-      await fetch("/api/hockey/calendario?id=" + id, { method: "DELETE" });
+      await apiFetch("/api/hockey/calendario?id=" + id, { method: "DELETE" });
       setCalEventos(p => p.filter(e => e.id !== id));
       showT("Evento eliminado");
     } catch (e: any) { showT(e.message || "Error", "err"); }
