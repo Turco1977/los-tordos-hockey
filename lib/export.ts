@@ -99,8 +99,10 @@ export function shareConvocatoriaWhatsApp(partido: Partido, convocadas: Jugadora
 
   let text = `📣 *Convocatoria*\n`;
   text += `*${tipoLabel}*\n`;
-  if (partido.rival) text += `vs ${partido.rival}\n`;
-  text += `📅 ${fmtD(partido.fecha)}\n`;
+  if (partido.rival && partido.rival !== "Entrenamiento") text += `vs ${partido.rival}\n`;
+  text += `📅 ${fmtD(partido.fecha)}`;
+  if (partido.fecha_numero) text += ` (Fecha ${partido.fecha_numero})`;
+  text += `\n`;
   text += `${partido.division} - Rama ${partido.rama}\n`;
   text += `${partido.sede === "local" ? "🏠 Local" : "✈️ Visitante"}\n`;
   if (partido.notas) text += `\n📝 ${partido.notas}\n`;

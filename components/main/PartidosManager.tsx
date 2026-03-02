@@ -24,7 +24,7 @@ export default function PartidosManager({ user, mob, showT }: any) {
   const [convocadas, sConvocadas] = useState<any[]>([]);
   const [fDiv, sFDiv] = useState("");
   const [fRama, sFRama] = useState("");
-  const [form, sForm] = useState<{fecha:string;rival:string;sede:string;division:string;rama:string;competencia:string;notas:string}>({ fecha: TODAY, rival: "", sede: "local", division: DIVISIONES[0], rama: "A", competencia: "partido", notas: "" });
+  const [form, sForm] = useState<{fecha:string;fecha_numero:string;rival:string;sede:string;division:string;rama:string;competencia:string;notas:string}>({ fecha: TODAY, fecha_numero: "", rival: "", sede: "local", division: DIVISIONES[0], rama: "A", competencia: "partido", notas: "" });
   const [lbfJugadoraIds, sLbfJugadoraIds] = useState<string[]>([]);
   const [loadingLbf, sLoadingLbf] = useState(false);
 
@@ -142,7 +142,9 @@ export default function PartidosManager({ user, mob, showT }: any) {
                   {tipo && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: p.competencia === "partido" ? "#DBEAFE" : "#F3E8FF", color: p.competencia === "partido" ? "#1D4ED8" : "#7C3AED", fontWeight: 600 }}>{tipo.i} {tipo.l}</span>}
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: colors.nv }}>{p.competencia === "entrenamiento" ? "🏋️ Entrenamiento" : `vs ${p.rival}`}</div>
-                <div style={{ fontSize: 11, color: colors.g5, marginTop: 2 }}>{p.division} • Rama {p.rama} • {p.sede === "local" ? "🏠 Local" : "✈️ Visitante"}</div>
+                <div style={{ fontSize: 11, color: colors.g5, marginTop: 2 }}>
+                  {p.fecha_numero ? `Fecha ${p.fecha_numero} • ` : ""}{p.division} • Rama {p.rama} • {p.sede === "local" ? "🏠 Local" : "✈️ Visitante"}
+                </div>
                 {p.notas && <div style={{ fontSize: 10, color: colors.g4, marginTop: 4, fontStyle: "italic" }}>📝 {p.notas.length > 60 ? p.notas.slice(0, 60) + "…" : p.notas}</div>}
               </Card>
             );
@@ -168,8 +170,11 @@ export default function PartidosManager({ user, mob, showT }: any) {
                   {CONVOCATORIA_TIPOS.map(c => <option key={c.k} value={c.k}>{c.i} {c.l}</option>)}
                 </select>
               </label>
-              <label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Fecha
+              <label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Día
                 <input type="date" value={form.fecha} onChange={e => sForm({ ...form, fecha: e.target.value })} style={{ display: "block", width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid " + colors.g3, marginTop: 4, fontSize: 13, background: cardBg, color: colors.nv }} />
+              </label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Fecha (nro)
+                <input type="number" value={form.fecha_numero} onChange={e => sForm({ ...form, fecha_numero: e.target.value })} placeholder="Ej: 1, 2, 10..." min="1" style={{ display: "block", width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid " + colors.g3, marginTop: 4, fontSize: 13, background: cardBg, color: colors.nv }} />
               </label>
               {isPartido && (
                 <label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Rival
@@ -252,7 +257,9 @@ export default function PartidosManager({ user, mob, showT }: any) {
         <div style={{ fontSize: 15, fontWeight: 600, color: colors.nv, marginTop: 4 }}>
           {isPartido ? `vs ${sel.rival}` : "🏋️ Entrenamiento"}
         </div>
-        <div style={{ fontSize: 11, color: colors.g5 }}>{fmtD(sel.fecha)} • {sel.division} • Rama {sel.rama} • {sel.sede === "local" ? "🏠 Local" : "✈️ Visitante"}</div>
+        <div style={{ fontSize: 11, color: colors.g5 }}>
+          {fmtD(sel.fecha)}{sel.fecha_numero ? ` • Fecha ${sel.fecha_numero}` : ""} • {sel.division} • Rama {sel.rama} • {sel.sede === "local" ? "🏠 Local" : "✈️ Visitante"}
+        </div>
         {sel.notas && <div style={{ fontSize: 12, color: colors.g5, marginTop: 6, padding: "8px 12px", background: isDark ? "rgba(255,255,255,.04)" : "#F9FAFB", borderRadius: 6, fontStyle: "italic" }}>📝 {sel.notas}</div>}
       </div>
 

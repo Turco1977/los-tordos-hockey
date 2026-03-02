@@ -22,11 +22,12 @@ export async function POST(req: NextRequest) {
     const sb = createAdminClient();
     const { data, error } = await sb.from("partidos").insert({
       fecha: body.fecha,
+      fecha_numero: body.fecha_numero ? parseInt(body.fecha_numero) : null,
       rival: body.rival,
       sede: body.sede || "local",
       division: body.division,
       rama: body.rama,
-      competencia: body.competencia || "otro",
+      competencia: body.competencia || "partido",
       goles_favor: 0,
       goles_contra: 0,
       notas: body.notas || null,

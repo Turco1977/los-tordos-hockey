@@ -149,6 +149,7 @@ export interface AsistenciaRegistro {
 export interface Partido {
   id: string;
   fecha: string;
+  fecha_numero: number | null;
   rival: string;
   sede: string;
   division: string;
