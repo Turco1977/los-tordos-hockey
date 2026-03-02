@@ -24,6 +24,7 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(1);
   const [filterDiv, setFilterDiv] = useState<string>("");
+  const [search, setSearch] = useState("");
 
   const sb = createClient();
 
@@ -90,13 +91,18 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
   const available = useMemo(() => {
     if (!selLbf) return [];
     const inLbf = new Set(lbfPlayers.map(p => p.jugadora_id));
-    return jugadoras.filter(j => j.activa && !inLbf.has(j.id)).sort((a, b) => {
+    let list = jugadoras.filter(j => j.activa && !inLbf.has(j.id));
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter(j => `${j.apellido} ${j.nombre}`.toLowerCase().includes(q) || j.dni.includes(q));
+    }
+    return list.sort((a, b) => {
       const aMatch = ((a.division_efectiva || a.division_manual) === selLbf.division && a.rama === selLbf.rama) ? 0 : 1;
       const bMatch = ((b.division_efectiva || b.division_manual) === selLbf.division && b.rama === selLbf.rama) ? 0 : 1;
       if (aMatch !== bMatch) return aMatch - bMatch;
       return a.apellido.localeCompare(b.apellido);
     });
-  }, [selLbf, jugadoras, lbfPlayers]);
+  }, [selLbf, jugadoras, lbfPlayers, search]);
 
   const filteredLbfs = useMemo(() => {
     if (!filterDiv) return lbfs;
@@ -151,8 +157,11 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 14 }}>
           {editable && (
             <Card>
-              <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv, marginBottom: 8 }}>Disponibles ({available.length})</div>
-              {available.length === 0 ? <div style={{ fontSize: 11, color: colors.g4 }}>No hay jugadoras disponibles</div> : (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv }}>Disponibles ({available.length})</div>
+              </div>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nombre o DNI..." style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, marginBottom: 8, boxSizing: "border-box" }} />
+              {available.length === 0 ? <div style={{ fontSize: 11, color: colors.g4 }}>{search ? "Sin resultados" : "No hay jugadoras disponibles"}</div> : (
                 <div style={{ maxHeight: 400, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
                   {available.map(j => {
                     const check = canAddToLBF(j);
