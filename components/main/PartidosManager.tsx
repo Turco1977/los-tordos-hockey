@@ -26,6 +26,7 @@ export default function PartidosManager({ user, mob, showT }: any) {
   const [fRama, sFRama] = useState("");
   const [form, sForm] = useState<{fecha:string;fecha_numero:string;rival:string;sede:string;division:string;rama:string;competencia:string;notas:string}>({ fecha: TODAY, fecha_numero: "", rival: "", sede: "local", division: DIVISIONES[0], rama: "A", competencia: "partido", notas: "" });
   const [lbfJugadoraIds, sLbfJugadoraIds] = useState<string[]>([]);
+  const [detailLbfIds, sDetailLbfIds] = useState<string[]>([]);
   const [loadingLbf, sLoadingLbf] = useState(false);
 
   // Auto-load LBF jugadoras when division/rama changes in the form
@@ -48,7 +49,16 @@ export default function PartidosManager({ user, mob, showT }: any) {
     sView("detail");
     const cRes = await apiFetch("/api/hockey/partidos/convocadas?partido_id=" + p.id);
     sConvocadas(await cRes.json());
-  }, []);
+    // Load LBF players for this convocatoria's division/rama
+    const approvedLbf = lbfs.find(l => l.estado === "aprobada" && l.division === p.division && l.rama === p.rama && l.ano === YEAR);
+    if (approvedLbf) {
+      const sb = createClient();
+      const { data } = await sb.from("lbf_jugadoras").select("jugadora_id").eq("lbf_id", approvedLbf.id);
+      sDetailLbfIds((data || []).map((d: any) => d.jugadora_id));
+    } else {
+      sDetailLbfIds([]);
+    }
+  }, [lbfs]);
 
   // Create convocatoria
   const crearConvocatoria = async () => {
@@ -241,6 +251,11 @@ export default function PartidosManager({ user, mob, showT }: any) {
   const convIds = new Set(convocadas.map(c => c.jugadora_id));
   const isPartido = sel?.competencia === "partido";
   const tipoLabel = CONVOCATORIA_TIPOS.find(c => c.k === sel?.competencia);
+  // Show only LBF players for this division/rama (~20), sorted by name
+  const detailPlayers = detailLbfIds.length > 0
+    ? activeJugadoras.filter(j => detailLbfIds.includes(j.id)).sort((a, b) => a.apellido.localeCompare(b.apellido))
+    : activeJugadoras.filter(j => convIds.has(j.id)); // fallback: show currently convoked
+  const convCount = detailPlayers.filter(j => convIds.has(j.id)).length;
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", flexWrap: "wrap", gap: 8 }}>
@@ -263,14 +278,14 @@ export default function PartidosManager({ user, mob, showT }: any) {
         {sel.notas && <div style={{ fontSize: 12, color: colors.g5, marginTop: 6, padding: "8px 12px", background: isDark ? "rgba(255,255,255,.04)" : "#F9FAFB", borderRadius: 6, fontStyle: "italic" }}>📝 {sel.notas}</div>}
       </div>
 
-      {/* Convocadas */}
+      {/* Convocadas - only LBF players */}
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv }}>Plantel Convocado ({convocadas.length})</div>
-          <Btn v="s" s="s" onClick={() => saveConvocadas(activeJugadoras.filter(j => convIds.has(j.id)).map(j => j.id))}>💾 Guardar</Btn>
+          <div style={{ fontSize: 12, fontWeight: 700, color: colors.nv }}>Plantel Convocado ({convCount}/{detailPlayers.length})</div>
+          <Btn v="s" s="s" onClick={() => saveConvocadas(detailPlayers.filter(j => convIds.has(j.id)).map(j => j.id))}>💾 Guardar</Btn>
         </div>
         <div style={{ display: "flex", flexDirection: "column" as const, gap: 2 }}>
-          {activeJugadoras.map(j => {
+          {detailPlayers.map(j => {
             const isConv = convIds.has(j.id);
             return (
               <div key={j.id} onClick={() => {
