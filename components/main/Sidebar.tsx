@@ -29,9 +29,6 @@ export default function Sidebar({ tab, onTab, userLevel, profile, onLogout, onTo
             {t.l}
           </button>
         ))}
-        <button onClick={onLogout} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "4px 8px", color: colors.g4, fontSize: 10 }}>
-          <span style={{ fontSize: 18 }}>🚪</span>Salir
-        </button>
       </nav>
     );
   }
@@ -52,15 +49,6 @@ export default function Sidebar({ tab, onTab, userLevel, profile, onLogout, onTo
           </button>
         ))}
       </nav>
-      <div style={{ padding: "12px 16px", borderTop: "1px solid #1E293B" }}>
-        <button onClick={onToggleTheme} style={{ width: "100%", padding: "8px", borderRadius: 6, border: "none", background: "#1E293B", color: "#94A3B8", cursor: "pointer", fontSize: 11, marginBottom: 8 }}>
-          {isDark ? "☀️ Modo claro" : "🌙 Modo oscuro"}
-        </button>
-        {profile && <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 8, textAlign: "center" }}>{profile.first_name} {profile.last_name}</div>}
-        <button onClick={onLogout} style={{ width: "100%", padding: "8px", borderRadius: 6, border: "1px solid #334155", background: "transparent", color: "#94A3B8", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
-          Cerrar sesión
-        </button>
-      </div>
     </aside>
   );
 }

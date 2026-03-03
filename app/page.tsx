@@ -5,6 +5,7 @@ import { ThemeCtx } from "@/lib/theme-context";
 import { useStore } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { fetchMyRoles, maxLevel } from "@/lib/api/auth";
+import { useFilteredData } from "@/lib/useFilteredData";
 import { apiFetch } from "@/lib/api/apiFetch";
 import { useMobile, Toast, Spinner } from "@/components/ui";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -45,6 +46,8 @@ export default function Page() {
   const { user, profile, roles, activeRole, setUser, setProfile, setRoles, setActiveRole, jugadoras, lbfs, fetchJugadoras, fetchLBFs, fetchSesiones, fetchPartidos, fetchCalEventos, viajes, fetchViajes, fetchStaff, notificaciones, fetchNotificaciones } = store;
 
   const userLevel = maxLevel(roles);
+
+  const filtered = useFilteredData(roles, jugadoras, lbfs, store.sesiones, store.partidos, store.calEventos);
 
   const loadData = useCallback(async () => {
     await Promise.all([fetchJugadoras(), fetchLBFs(), fetchSesiones(), fetchPartidos(), fetchCalEventos(), fetchViajes(), fetchStaff(), fetchNotificaciones()]);
@@ -204,33 +207,33 @@ export default function Page() {
   const content = () => {
     switch (tab) {
       case "dashboard":
-        return <Dashboard jugadoras={jugadoras} lbfs={lbfs} partidos={store.partidos} userLevel={userLevel} />;
+        return <Dashboard jugadoras={filtered.jugadoras} lbfs={filtered.lbfs} partidos={filtered.partidos} userLevel={userLevel} />;
       case "padron":
         if (playerView === "new") return <PlayerForm onSave={savePlayer} onCancel={() => setPlayerView("list")} saving={saving} />;
         if (playerView === "form" && selPlayer) return <PlayerForm jugadora={selPlayer} onSave={savePlayer} onCancel={() => setPlayerView("detail")} saving={saving} />;
         if (playerView === "detail" && selPlayer) return <PlayerDetail jugadora={selPlayer} onEdit={() => setPlayerView("form")} onBack={() => { setPlayerView("list"); setSelPlayer(null); }} userLevel={userLevel} />;
-        return <PlayerRegistry jugadoras={jugadoras} onSelect={j => { setSelPlayer(j); setPlayerView("detail"); }} onNew={() => { setSelPlayer(null); setPlayerView("new"); }} onDel={delJugadoras} onBulk={bulkUpload} userLevel={userLevel} />;
+        return <PlayerRegistry jugadoras={filtered.jugadoras} onSelect={j => { setSelPlayer(j); setPlayerView("detail"); }} onNew={() => { setSelPlayer(null); setPlayerView("new"); }} onDel={delJugadoras} onBulk={bulkUpload} userLevel={userLevel} />;
       case "planteles":
         if (playerView === "detail" && selPlayer) return <PlayerDetail jugadora={selPlayer} onEdit={() => setPlayerView("form")} onBack={() => { setPlayerView("list"); setSelPlayer(null); }} userLevel={userLevel} />;
         if (playerView === "form" && selPlayer) return <PlayerForm jugadora={selPlayer} onSave={savePlayer} onCancel={() => setPlayerView("detail")} saving={saving} />;
-        return <Planteles jugadoras={jugadoras} lbfs={lbfs} partidos={store.partidos} onSelect={j => { setSelPlayer(j); setPlayerView("detail"); }} />;
+        return <Planteles jugadoras={filtered.jugadoras} lbfs={filtered.lbfs} partidos={filtered.partidos} onSelect={j => { setSelPlayer(j); setPlayerView("detail"); }} allowedDivisiones={filtered.allowedDivisiones} allowedRamas={filtered.allowedRamas} />;
       case "lbf":
         return (
           <>
-            <LBFSummary jugadoras={jugadoras} />
-            <LBFManager jugadoras={jugadoras} lbfs={lbfs} userId={user.id} userLevel={userLevel} onRefresh={fetchLBFs} />
+            <LBFSummary jugadoras={filtered.jugadoras} />
+            <LBFManager jugadoras={filtered.jugadoras} lbfs={filtered.lbfs} userId={user.id} userLevel={userLevel} onRefresh={fetchLBFs} allowedDivisiones={filtered.allowedDivisiones} allowedRamas={filtered.allowedRamas} />
           </>
         );
       case "viajes":
-        return <ViajesManager jugadoras={jugadoras} viajes={viajes} userId={user.id} userLevel={userLevel} onRefresh={fetchViajes} staff={store.staff} />;
+        return <ViajesManager jugadoras={filtered.jugadoras} viajes={viajes} userId={user.id} userLevel={userLevel} onRefresh={fetchViajes} staff={store.staff} />;
       case "organigrama":
         return <Organigrama />;
       case "asistencia":
-        return <AsistenciaManager user={user} mob={mob} showT={(msg: string, type?: "ok" | "err") => setToast({ msg, type: type || "ok" })} />;
+        return <AsistenciaManager user={user} mob={mob} showT={(msg: string, type?: "ok" | "err") => setToast({ msg, type: type || "ok" })} allowedDivisiones={filtered.allowedDivisiones} allowedRamas={filtered.allowedRamas} filteredSesiones={filtered.sesiones} />;
       case "partidos":
-        return <PartidosManager user={user} mob={mob} showT={(msg: string, type?: "ok" | "err") => setToast({ msg, type: type || "ok" })} />;
+        return <PartidosManager user={user} mob={mob} showT={(msg: string, type?: "ok" | "err") => setToast({ msg, type: type || "ok" })} allowedDivisiones={filtered.allowedDivisiones} allowedRamas={filtered.allowedRamas} filteredPartidos={filtered.partidos} />;
       case "calendario":
-        return <HockeyCalendario user={user} mob={mob} showT={(msg: string, type?: "ok" | "err") => setToast({ msg, type: type || "ok" })} onNavAsist={() => setTab("asistencia" as TabId)} onNavPartido={() => setTab("partidos" as TabId)} />;
+        return <HockeyCalendario user={user} mob={mob} showT={(msg: string, type?: "ok" | "err") => setToast({ msg, type: type || "ok" })} onNavAsist={() => setTab("asistencia" as TabId)} onNavPartido={() => setTab("partidos" as TabId)} filteredCalEventos={filtered.calEventos} filteredSesiones={filtered.sesiones} filteredPartidos={filtered.partidos} allowedDivisiones={filtered.allowedDivisiones} />;
       default:
         return null;
     }
@@ -245,7 +248,12 @@ export default function Page() {
           <main style={{ flex: 1, padding: mob ? "12px 8px 80px" : "20px 16px", width: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
               <RoleSelector roles={roles} activeRole={activeRole} onSelect={setActiveRole} />
-              <NotificationBell notificaciones={notificaciones} onRefresh={fetchNotificaciones} onNav={(t) => { setTab(t as TabId); }} />
+              <div style={{ display: "flex", alignItems: "center", gap: mob ? 6 : 10 }}>
+                {!mob && profile && <div style={{ textAlign: "right" as const }}><div style={{ fontSize: 11, fontWeight: 700, color: theme.colors.nv }}>{profile.first_name} {profile.last_name}</div></div>}
+                <button aria-label="Cambiar tema" onClick={theme.toggle} title={theme.isDark ? "Modo claro" : "Modo oscuro"} style={{ width: mob ? 40 : 28, height: mob ? 40 : 28, borderRadius: 7, border: "1px solid " + theme.colors.g2, background: theme.cardBg, cursor: "pointer", fontSize: mob ? 14 : 12, display: "flex", alignItems: "center", justifyContent: "center" }}>{theme.isDark ? "☀️" : "🌙"}</button>
+                <button aria-label="Cerrar sesion" onClick={handleLogout} title="Cerrar sesión" style={{ width: mob ? 40 : 28, height: mob ? 40 : 28, borderRadius: 7, border: "1px solid " + theme.colors.g2, background: theme.cardBg, cursor: "pointer", fontSize: mob ? 14 : 12, display: "flex", alignItems: "center", justifyContent: "center" }}>↩</button>
+                <NotificationBell notificaciones={notificaciones} onRefresh={fetchNotificaciones} onNav={(t) => { setTab(t as TabId); }} />
+              </div>
             </div>
             {content()}
           </main>
