@@ -7,15 +7,11 @@ interface SidebarProps {
   tab: string;
   onTab: (t: string) => void;
   userLevel: number;
-  profile: any;
-  onLogout: () => void;
-  onToggleTheme: () => void;
-  isDark: boolean;
   mob: boolean;
   activeRole: HockeyRole | null;
 }
 
-export default function Sidebar({ tab, onTab, userLevel, profile, onLogout, onToggleTheme, isDark, mob, activeRole }: SidebarProps) {
+export default function Sidebar({ tab, onTab, userLevel, mob, activeRole }: SidebarProps) {
   const { colors, cardBg } = useC();
   const visibleTabs = TABS.filter(t => userLevel <= t.minLv);
   const roleMeta = activeRole ? HOCKEY_ROLES[activeRole.role] : null;

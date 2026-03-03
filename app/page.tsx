@@ -244,7 +244,7 @@ export default function Page() {
       <ThemeCtx.Provider value={{ colors: theme.colors, isDark: theme.isDark, cardBg: theme.cardBg }}>
         <style dangerouslySetInnerHTML={{ __html: darkCSS }} />
         <div style={{ display: "flex", minHeight: "100vh", background: theme.colors.g1, fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color: theme.colors.nv }}>
-          <Sidebar tab={tab} onTab={t => { setTab(t as TabId); setPlayerView("list"); setSelPlayer(null); }} userLevel={userLevel} profile={profile} onLogout={handleLogout} onToggleTheme={theme.toggle} isDark={theme.isDark} mob={mob} activeRole={activeRole} />
+          <Sidebar tab={tab} onTab={t => { setTab(t as TabId); setPlayerView("list"); setSelPlayer(null); }} userLevel={userLevel} mob={mob} activeRole={activeRole} />
           <main style={{ flex: 1, padding: mob ? "12px 8px 80px" : "20px 16px", width: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
               <RoleSelector roles={roles} activeRole={activeRole} onSelect={setActiveRole} />
