@@ -246,10 +246,10 @@ export default function Page() {
         <div style={{ display: "flex", minHeight: "100vh", background: theme.colors.g1, fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color: theme.colors.nv }}>
           <Sidebar tab={tab} onTab={t => { setTab(t as TabId); setPlayerView("list"); setSelPlayer(null); }} userLevel={userLevel} mob={mob} activeRole={activeRole} />
           <main style={{ flex: 1, padding: mob ? "12px 8px 80px" : "20px 16px", width: "100%" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
               <RoleSelector roles={roles} activeRole={activeRole} onSelect={setActiveRole} />
-              <div style={{ display: "flex", alignItems: "center", gap: mob ? 6 : 10 }}>
-                {!mob && profile && <div style={{ textAlign: "right" as const }}><div style={{ fontSize: 11, fontWeight: 700, color: theme.colors.nv }}>{profile.first_name} {profile.last_name}</div></div>}
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: mob ? 6 : 10 }}>
+                {!mob && profile && <div style={{ fontSize: 11, fontWeight: 700, color: theme.colors.nv }}>{profile.first_name} {profile.last_name}</div>}
                 <button aria-label="Cambiar tema" onClick={theme.toggle} title={theme.isDark ? "Modo claro" : "Modo oscuro"} style={{ width: mob ? 40 : 28, height: mob ? 40 : 28, borderRadius: 7, border: "1px solid " + theme.colors.g2, background: theme.cardBg, cursor: "pointer", fontSize: mob ? 14 : 12, display: "flex", alignItems: "center", justifyContent: "center" }}>{theme.isDark ? "☀️" : "🌙"}</button>
                 <button aria-label="Cerrar sesion" onClick={handleLogout} title="Cerrar sesión" style={{ width: mob ? 40 : 28, height: mob ? 40 : 28, borderRadius: 7, border: "1px solid " + theme.colors.g2, background: theme.cardBg, cursor: "pointer", fontSize: mob ? 14 : 12, display: "flex", alignItems: "center", justifyContent: "center" }}>↩</button>
                 <NotificationBell notificaciones={notificaciones} onRefresh={fetchNotificaciones} onNav={(t) => { setTab(t as TabId); }} />
