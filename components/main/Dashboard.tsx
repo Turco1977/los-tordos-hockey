@@ -17,17 +17,21 @@ export default function Dashboard({ jugadoras, lbfs, partidos }: { jugadoras: Ju
   const [loadingEv, setLoadingEv] = useState(true);
 
   // Fetch all eventos + convocadas for rankings and participation stats
+  // Filter by accessible partido IDs (partidos prop is already filtered)
+  const partidoIds = useMemo(() => new Set(partidos.map(p => p.id)), [partidos]);
   useEffect(() => {
     const sb = createClient();
     Promise.all([
       sb.from("partido_eventos").select("*"),
       sb.from("partido_convocadas").select("*"),
     ]).then(([evRes, convRes]) => {
-      setEventos((evRes.data || []) as PartidoEvento[]);
-      setConvocadasAll((convRes.data || []) as PartidoConvocada[]);
+      const ev = (evRes.data || []) as PartidoEvento[];
+      const conv = (convRes.data || []) as PartidoConvocada[];
+      setEventos(ev.filter(e => partidoIds.has(e.partido_id)));
+      setConvocadasAll(conv.filter(c => partidoIds.has(c.partido_id)));
       setLoadingEv(false);
     });
-  }, [partidos]);
+  }, [partidos, partidoIds]);
 
   const stats = useMemo(() => {
     const activas = jugadoras.filter(j => j.estado !== "baja");
@@ -302,9 +306,6 @@ export default function Dashboard({ jugadoras, lbfs, partidos }: { jugadoras: Ju
         </Card>
 
         {/* Rankings */}
-        {rankCard("Goleadoras", "⚽", ranking.goles, colors.gn)}
-        {rankCard("Tarjetas Amarillas", "🟡", ranking.amarillas, colors.yl)}
-        {rankCard("Tarjetas Rojas", "🔴", ranking.rojas, colors.rd)}
       </div>
     </div>
   );
