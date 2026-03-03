@@ -13,13 +13,16 @@ const fmtD = (d: string) => { if (!d) return "–"; const p = d.slice(0, 10).spl
 
 interface SesionStats { id: string; presentes: number; total: number; pct: number }
 
-export default function AsistenciaManager({ user, mob, showT }: any) {
+export default function AsistenciaManager({ user, mob, showT, allowedDivisiones, allowedRamas, filteredSesiones }: any) {
   const { colors, isDark, cardBg } = useC();
   const jugadoras = useStore(s => s.jugadoras);
-  const sesiones = useStore(s => s.sesiones);
+  const storeSesiones = useStore(s => s.sesiones);
   const setSesiones = useStore(s => s.setSesiones);
   const registros = useStore(s => s.registros);
   const setRegistros = useStore(s => s.setRegistros);
+  const sesiones: import("@/lib/supabase/types").AsistenciaSesion[] = filteredSesiones || storeSesiones;
+  const divOptions: string[] = allowedDivisiones && allowedDivisiones.length > 0 ? allowedDivisiones : [...DIVISIONES];
+  const ramaOptions: string[] = allowedRamas && allowedRamas.length > 0 ? allowedRamas : [...RAMAS];
 
   const [view, sView] = useState<"list" | "new" | "detail">("list");
   const [selSesion, sSelSesion] = useState<any>(null);
@@ -27,9 +30,10 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
   const [qrTimer, sQrTimer] = useState(0);
   const [fDiv, sFDiv] = useState("");
   const [fRama, sFRama] = useState("");
-  const [form, sForm] = useState<{fecha:string;division:string;rama:string;tipo_actividad:string;notas:string}>({ fecha: TODAY, division: DIVISIONES[0], rama: "A", tipo_actividad: "entrenamiento", notas: "" });
+  const [form, sForm] = useState<{fecha:string;division:string;rama:string;tipo_actividad:string;notas:string}>({ fecha: TODAY, division: divOptions[0], rama: ramaOptions[0], tipo_actividad: "entrenamiento", notas: "" });
   const [sesionStatsMap, setSesionStatsMap] = useState<Record<string, SesionStats>>({});
   const [loadingStats, setLoadingStats] = useState(true);
+  const [confirmDel, sConfirmDel] = useState(false);
 
   // Load attendance stats for all sessions (for list view %)
   useEffect(() => {
@@ -59,7 +63,7 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
     if (Array.isArray(data)) setRegistros(() => data);
   }, [setRegistros]);
 
-  const openDetail = (s: any) => { sSelSesion(s); sView("detail"); loadRegistros(s.id); sQrUrl(""); sQrTimer(0); };
+  const openDetail = (s: any) => { sSelSesion(s); sView("detail"); loadRegistros(s.id); sQrUrl(""); sQrTimer(0); sConfirmDel(false); };
 
   const crearSesion = async () => {
     try {
@@ -131,6 +135,21 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
     } catch (e: any) { showT(e.message || "Error", "err"); }
   };
 
+  const eliminarSesion = async () => {
+    if (!selSesion) return;
+    try {
+      const res = await apiFetch("/api/hockey/asistencia", {
+        method: "DELETE", body: JSON.stringify({ id: selSesion.id }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setSesiones(p => p.filter(s => s.id !== selSesion.id));
+      sSelSesion(null);
+      sView("list");
+      showT("Sesión eliminada");
+    } catch (e: any) { showT(e.message || "Error", "err"); }
+  };
+
   // Filter athletes by session division+rama
   const sessionAthletes = selSesion
     ? jugadoras.filter(j => j.estado !== "baja" && (j.division_efectiva || j.division_manual) === selSesion.division && j.rama === selSesion.rama)
@@ -185,11 +204,11 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
         <select value={fDiv} onChange={e => sFDiv(e.target.value)} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, background: cardBg, color: colors.nv }}>
           <option value="">Todas las divisiones</option>
-          {DIVISIONES.map(d => <option key={d} value={d}>{d}</option>)}
+          {divOptions.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
         <select value={fRama} onChange={e => sFRama(e.target.value)} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, background: cardBg, color: colors.nv }}>
           <option value="">Todas las ramas</option>
-          {RAMAS.map(r => <option key={r} value={r}>Rama {r}</option>)}
+          {ramaOptions.map(r => <option key={r} value={r}>Rama {r}</option>)}
         </select>
       </div>
       {filtered.length === 0 ? <Card><div style={{ textAlign: "center", padding: 24, color: colors.g4 }}>No hay sesiones. Creá una nueva.</div></Card> : (
@@ -234,12 +253,12 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
           </label>
           <label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>División
             <select value={form.division} onChange={e => sForm({ ...form, division: e.target.value })} style={{ display: "block", width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid " + colors.g3, marginTop: 4, fontSize: 13, background: cardBg, color: colors.nv }}>
-              {DIVISIONES.map(d => <option key={d} value={d}>{d}</option>)}
+              {divOptions.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
           </label>
           <label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Rama
             <select value={form.rama} onChange={e => sForm({ ...form, rama: e.target.value })} style={{ display: "block", width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid " + colors.g3, marginTop: 4, fontSize: 13, background: cardBg, color: colors.nv }}>
-              {RAMAS.map(r => <option key={r} value={r}>Rama {r}</option>)}
+              {ramaOptions.map(r => <option key={r} value={r}>Rama {r}</option>)}
             </select>
           </label>
           <label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Tipo de Actividad
@@ -277,13 +296,17 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
         </div>
       </div>
 
-      {selSesion.estado === "abierta" && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-          <Btn v="pu" s="s" onClick={genQR}>Generar QR</Btn>
-          <Btn v="s" s="s" onClick={guardarAsistencia}>Guardar</Btn>
-          <Btn v="r" s="s" onClick={cerrarSesion}>Cerrar Sesión</Btn>
-        </div>
-      )}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+        {selSesion.estado === "abierta" && <Btn v="pu" s="s" onClick={genQR}>Generar QR</Btn>}
+        <Btn v="s" s="s" onClick={guardarAsistencia}>Guardar</Btn>
+        {selSesion.estado === "abierta" && <Btn v="r" s="s" onClick={cerrarSesion}>Cerrar Sesión</Btn>}
+        {!confirmDel ? <Btn v="g" s="s" onClick={() => sConfirmDel(true)} style={{ color: colors.rd }}>🗑️ Eliminar</Btn>
+        : <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <span style={{ fontSize: 11, color: colors.rd, fontWeight: 600 }}>Confirmar?</span>
+            <Btn v="r" s="s" onClick={eliminarSesion}>Sí, eliminar</Btn>
+            <Btn v="g" s="s" onClick={() => sConfirmDel(false)}>Cancelar</Btn>
+          </div>}
+      </div>
 
       {qrUrl && (
         <Card style={{ textAlign: "center" as const, marginBottom: 16 }}>
@@ -301,8 +324,8 @@ export default function AsistenciaManager({ user, mob, showT }: any) {
               const reg = registros.find(r => r.jugadora_id === j.id);
               const isPresent = !!reg?.presente;
               return (
-                <div key={j.id} onClick={() => selSesion.estado === "abierta" && togglePresente(j.id)}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: mob ? "10px 8px" : "6px 8px", borderRadius: 6, background: isPresent ? (isDark ? "rgba(16,185,129,.15)" : "#D1FAE5") : "transparent", cursor: selSesion.estado === "abierta" ? "pointer" : "default", minHeight: mob ? 44 : undefined }}>
+                <div key={j.id} onClick={() => togglePresente(j.id)}
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: mob ? "10px 8px" : "6px 8px", borderRadius: 6, background: isPresent ? (isDark ? "rgba(16,185,129,.15)" : "#D1FAE5") : "transparent", cursor: "pointer", minHeight: mob ? 44 : undefined }}>
                   <span style={{ fontSize: 16 }}>{isPresent ? "✅" : "⬜"}</span>
                   <span style={{ flex: 1, fontSize: mob ? 13 : 12, fontWeight: isPresent ? 600 : 400, color: colors.nv }}>{j.apellido}, {j.nombre}</span>
                   {reg?.metodo === "qr" && <span style={{ fontSize: 9, background: colors.pr + "20", color: colors.pr, padding: "1px 6px", borderRadius: 8 }}>QR</span>}

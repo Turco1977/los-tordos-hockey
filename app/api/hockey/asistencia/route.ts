@@ -55,3 +55,21 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const auth = await requireLevel(req, 3);
+    if (isAuthError(auth)) return authError(auth.error, auth.status);
+
+    const { id } = await req.json();
+    if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
+
+    const sb = createAdminClient();
+    await sb.from("asistencia_registros").delete().eq("sesion_id", id);
+    const { error } = await sb.from("asistencia_sesiones").delete().eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
