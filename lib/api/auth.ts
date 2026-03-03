@@ -42,3 +42,42 @@ export function accessibleDivisiones(roles: HockeyRole[]): string[] {
   roles.forEach(r => r.divisiones.forEach(d => divs.add(d)));
   return Array.from(divs);
 }
+
+/** Get all ramas the user can access */
+export function accessibleRamas(roles: HockeyRole[]): string[] {
+  const lv = maxLevel(roles);
+  if (lv <= 2) {
+    const { RAMAS } = require("@/lib/constants");
+    return [...RAMAS];
+  }
+  const ramas = new Set<string>();
+  roles.forEach(r => r.ramas.forEach(rm => ramas.add(rm)));
+  return Array.from(ramas);
+}
+
+/** Check if user has access to a specific division+rama pair (must be in the SAME role) */
+export function hasAccessToTeam(roles: HockeyRole[], division: string, rama: string): boolean {
+  const lv = maxLevel(roles);
+  if (lv <= 2) return true;
+  return roles.some(r => r.divisiones.includes(division) && r.ramas.includes(rama));
+}
+
+/** Get all accessible "division|rama" pairs */
+export function accessibleTeamPairs(roles: HockeyRole[]): Set<string> {
+  const lv = maxLevel(roles);
+  if (lv <= 2) {
+    const { DIVISIONES, RAMAS } = require("@/lib/constants");
+    const pairs = new Set<string>();
+    for (const d of DIVISIONES) for (const r of RAMAS) pairs.add(`${d}|${r}`);
+    return pairs;
+  }
+  const pairs = new Set<string>();
+  roles.forEach(r => {
+    r.divisiones.forEach(d => {
+      r.ramas.forEach(rm => {
+        pairs.add(`${d}|${rm}`);
+      });
+    });
+  });
+  return pairs;
+}

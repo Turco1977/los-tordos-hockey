@@ -12,19 +12,22 @@ const TODAY = new Date().toISOString().slice(0, 10);
 const YEAR = new Date().getFullYear();
 const fmtD = (d: string) => { if (!d) return "–"; const p = d.slice(0, 10).split("-"); return p[2] + "/" + p[1] + "/" + p[0]; };
 
-export default function PartidosManager({ user, mob, showT }: any) {
+export default function PartidosManager({ user, mob, showT, allowedDivisiones, allowedRamas, filteredPartidos }: any) {
   const { colors, isDark, cardBg } = useC();
   const jugadoras = useStore(s => s.jugadoras);
-  const partidos = useStore(s => s.partidos);
+  const storePartidos = useStore(s => s.partidos);
   const setPartidos = useStore(s => s.setPartidos);
   const lbfs = useStore(s => s.lbfs);
+  const partidos: import("@/lib/supabase/types").Partido[] = filteredPartidos || storePartidos;
+  const divOptions: string[] = allowedDivisiones && allowedDivisiones.length > 0 ? allowedDivisiones : [...DIVISIONES];
+  const ramaOptions: string[] = allowedRamas && allowedRamas.length > 0 ? allowedRamas : [...RAMAS];
 
   const [view, sView] = useState<"list" | "new" | "detail">("list");
   const [sel, sSel] = useState<any>(null);
   const [convocadas, sConvocadas] = useState<any[]>([]);
   const [fDiv, sFDiv] = useState("");
   const [fRama, sFRama] = useState("");
-  const [form, sForm] = useState<{fecha:string;fecha_numero:string;rival:string;sede:string;division:string;rama:string;competencia:string;notas:string}>({ fecha: TODAY, fecha_numero: "", rival: "", sede: "local", division: DIVISIONES[0], rama: "A", competencia: "partido", notas: "" });
+  const [form, sForm] = useState<{fecha:string;fecha_numero:string;rival:string;sede:string;division:string;rama:string;competencia:string;notas:string}>({ fecha: TODAY, fecha_numero: "", rival: "", sede: "local", division: divOptions[0], rama: ramaOptions[0], competencia: "partido", notas: "" });
   const [lbfJugadoraIds, sLbfJugadoraIds] = useState<string[]>([]);
   const [detailLbfIds, sDetailLbfIds] = useState<string[]>([]);
   const [loadingLbf, sLoadingLbf] = useState(false);
@@ -134,11 +137,11 @@ export default function PartidosManager({ user, mob, showT }: any) {
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
         <select value={fDiv} onChange={e => sFDiv(e.target.value)} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, background: cardBg, color: colors.nv }}>
           <option value="">Todas las divisiones</option>
-          {DIVISIONES.map(d => <option key={d} value={d}>{d}</option>)}
+          {divOptions.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
         <select value={fRama} onChange={e => sFRama(e.target.value)} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, background: cardBg, color: colors.nv }}>
           <option value="">Todas las ramas</option>
-          {RAMAS.map(r => <option key={r} value={r}>Rama {r}</option>)}
+          {ramaOptions.map(r => <option key={r} value={r}>Rama {r}</option>)}
         </select>
       </div>
       {filtered.length === 0 ? <Card><div style={{ textAlign: "center", padding: 24, color: colors.g4 }}>No hay convocatorias registradas.</div></Card> : (
@@ -199,12 +202,12 @@ export default function PartidosManager({ user, mob, showT }: any) {
               </label>
               <label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>División
                 <select value={form.division} onChange={e => sForm({ ...form, division: e.target.value })} style={{ display: "block", width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid " + colors.g3, marginTop: 4, fontSize: 13, background: cardBg, color: colors.nv }}>
-                  {DIVISIONES.map(d => <option key={d} value={d}>{d}</option>)}
+                  {divOptions.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </label>
               <label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Rama
                 <select value={form.rama} onChange={e => sForm({ ...form, rama: e.target.value })} style={{ display: "block", width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid " + colors.g3, marginTop: 4, fontSize: 13, background: cardBg, color: colors.nv }}>
-                  {RAMAS.map(r => <option key={r} value={r}>Rama {r}</option>)}
+                  {ramaOptions.map(r => <option key={r} value={r}>Rama {r}</option>)}
                 </select>
               </label>
               <label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Notas

@@ -19,11 +19,13 @@ interface PlayerStats {
   enLBF: boolean;
 }
 
-export default function Planteles({ jugadoras, lbfs, partidos, onSelect }: { jugadoras: Jugadora[]; lbfs: LBF[]; partidos: Partido[]; onSelect: (j: Jugadora) => void }) {
+export default function Planteles({ jugadoras, lbfs, partidos, onSelect, allowedDivisiones, allowedRamas }: { jugadoras: Jugadora[]; lbfs: LBF[]; partidos: Partido[]; onSelect: (j: Jugadora) => void; allowedDivisiones?: string[]; allowedRamas?: string[] }) {
   const { colors, cardBg, isDark } = useC();
   const mob = useMobile();
-  const [division, setDivision] = useState<string>(DIVISIONES[0]);
-  const [rama, setRama] = useState<string>(RAMAS[0]);
+  const divOptions = allowedDivisiones && allowedDivisiones.length > 0 ? allowedDivisiones : [...DIVISIONES];
+  const ramaOptions = allowedRamas && allowedRamas.length > 0 ? allowedRamas : [...RAMAS];
+  const [division, setDivision] = useState<string>(divOptions[0]);
+  const [rama, setRama] = useState<string>(ramaOptions[0]);
   const [eventos, setEventos] = useState<PartidoEvento[]>([]);
   const [convocadas, setConvocadas] = useState<PartidoConvocada[]>([]);
   const [lbfJugadoraIds, setLbfJugadoraIds] = useState<Set<string>>(new Set());
@@ -98,10 +100,10 @@ export default function Planteles({ jugadoras, lbfs, partidos, onSelect }: { jug
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, alignItems: "center" }}>
         <select value={division} onChange={e => setDivision(e.target.value)} style={selSt}>
-          {DIVISIONES.map(d => <option key={d} value={d}>{d}</option>)}
+          {divOptions.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
         <select value={rama} onChange={e => setRama(e.target.value)} style={selSt}>
-          {RAMAS.map(r => <option key={r} value={r}>Rama {r}</option>)}
+          {ramaOptions.map(r => <option key={r} value={r}>Rama {r}</option>)}
         </select>
         <span style={{ fontSize: 11, color: colors.g4 }}>{stats.length} jugadora{stats.length !== 1 ? "s" : ""} · {totalPartidos} partido{totalPartidos !== 1 ? "s" : ""}</span>
       </div>

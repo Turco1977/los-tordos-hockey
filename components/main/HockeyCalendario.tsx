@@ -27,12 +27,16 @@ function expandRecurrence(ev: any): any[] {
   return events;
 }
 
-export default function HockeyCalendario({ user, mob, showT, onNavAsist, onNavPartido }: any) {
+export default function HockeyCalendario({ user, mob, showT, onNavAsist, onNavPartido, filteredCalEventos, filteredSesiones, filteredPartidos, allowedDivisiones }: any) {
   const { colors, isDark, cardBg } = useC();
-  const calEventos = useStore(s => s.calEventos);
+  const storeCalEventos = useStore(s => s.calEventos);
   const setCalEventos = useStore(s => s.setCalEventos);
-  const sesiones = useStore(s => s.sesiones);
-  const partidos = useStore(s => s.partidos);
+  const storeSesiones = useStore(s => s.sesiones);
+  const storePartidos = useStore(s => s.partidos);
+  const calEventos: import("@/lib/supabase/types").CalendarioEvento[] = filteredCalEventos || storeCalEventos;
+  const sesiones: import("@/lib/supabase/types").AsistenciaSesion[] = filteredSesiones || storeSesiones;
+  const partidos: import("@/lib/supabase/types").Partido[] = filteredPartidos || storePartidos;
+  const divOptions: string[] = allowedDivisiones && allowedDivisiones.length > 0 ? allowedDivisiones : [...DIVISIONES];
 
   const [viewMode, sViewMode] = useState<"month" | "week" | "today">("month");
   const [curDate, sCurDate] = useState(new Date());
@@ -114,7 +118,7 @@ export default function HockeyCalendario({ user, mob, showT, onNavAsist, onNavPa
         </select>
         <select value={fDiv} onChange={e => sFDiv(e.target.value)} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, background: cardBg, color: colors.nv }}>
           <option value="">Todas las divisiones</option>
-          {DIVISIONES.map(d => <option key={d} value={d}>{d}</option>)}
+          {divOptions.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
 
@@ -131,7 +135,7 @@ export default function HockeyCalendario({ user, mob, showT, onNavAsist, onNavPa
             </select>
             <select value={form.division} onChange={e => sForm({ ...form, division: e.target.value })} style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 12, background: cardBg, color: colors.nv }}>
               <option value="">División (opcional)</option>
-              {DIVISIONES.map(d => <option key={d} value={d}>{d}</option>)}
+              {divOptions.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
             <select value={form.recurrencia} onChange={e => sForm({ ...form, recurrencia: e.target.value })} style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 12, background: cardBg, color: colors.nv }}>
               <option value="none">Sin recurrencia</option>

@@ -14,13 +14,15 @@ import LBFHistory from "./LBFHistory";
 type View = "list" | "new" | "detail";
 const currentYear = new Date().getFullYear();
 
-export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefresh }: { jugadoras: Jugadora[]; lbfs: LBF[]; userId: string; userLevel: number; onRefresh: () => void }) {
+export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefresh, allowedDivisiones, allowedRamas }: { jugadoras: Jugadora[]; lbfs: LBF[]; userId: string; userLevel: number; onRefresh: () => void; allowedDivisiones?: string[]; allowedRamas?: string[] }) {
   const { colors, cardBg } = useC();
   const mob = useMobile();
+  const divOptions = allowedDivisiones && allowedDivisiones.length > 0 ? allowedDivisiones : [...DIVISIONES];
+  const ramaOptions = allowedRamas && allowedRamas.length > 0 ? allowedRamas : [...RAMAS];
   const [view, setView] = useState<View>("list");
   const [selLbf, setSelLbf] = useState<LBF | null>(null);
   const [lbfPlayers, setLbfPlayers] = useState<(LBFJugadora & { jugadora?: Jugadora })[]>([]);
-  const [form, setForm] = useState({ ano: currentYear, division: DIVISIONES[0] as string, rama: RAMAS[0] as string, entrenadora: "" });
+  const [form, setForm] = useState({ ano: currentYear, division: divOptions[0] as string, rama: ramaOptions[0] as string, entrenadora: "" });
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(1);
   const [filterDiv, setFilterDiv] = useState<string>("");
@@ -54,7 +56,7 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
     if (data.error) return alert(data.error);
     onRefresh();
     setView("list");
-    setForm({ ano: currentYear, division: DIVISIONES[0], rama: RAMAS[0], entrenadora: "" });
+    setForm({ ano: currentYear, division: divOptions[0], rama: ramaOptions[0], entrenadora: "" });
   };
 
   const addPlayer = async (j: Jugadora) => {
@@ -122,8 +124,8 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
         <Card>
           <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12 }}>
             <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Año *</label><input type="number" value={form.ano} onChange={e => setForm({ ...form, ano: Number(e.target.value) })} style={inputSt} min={2020} max={2100} /></div>
-            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>División *</label><select value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} style={inputSt}>{DIVISIONES.map(d => <option key={d}>{d}</option>)}</select></div>
-            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Rama *</label><select value={form.rama} onChange={e => setForm({ ...form, rama: e.target.value })} style={inputSt}>{RAMAS.map(r => <option key={r}>{r}</option>)}</select></div>
+            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>División *</label><select value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} style={inputSt}>{divOptions.map(d => <option key={d}>{d}</option>)}</select></div>
+            <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Rama *</label><select value={form.rama} onChange={e => setForm({ ...form, rama: e.target.value })} style={inputSt}>{ramaOptions.map(r => <option key={r}>{r}</option>)}</select></div>
             <div><label style={{ fontSize: 11, fontWeight: 600, color: colors.g5 }}>Entrenador/a</label><input value={form.entrenadora} onChange={e => setForm({ ...form, entrenadora: e.target.value })} style={inputSt} placeholder="Auto-detectado del organigrama" /></div>
           </div>
           <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
@@ -224,7 +226,7 @@ export default function LBFManager({ jugadoras, lbfs, userId, userLevel, onRefre
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <select value={filterDiv} onChange={e => { setFilterDiv(e.target.value); setPage(1); }} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid " + colors.g3, fontSize: 11, color: colors.g5 }}>
             <option value="">Todas las divisiones</option>
-            {DIVISIONES.map(d => <option key={d} value={d}>{d}</option>)}
+            {divOptions.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
           <Btn s="s" onClick={() => setView("new")}>+ Nueva LBF</Btn>
         </div>
